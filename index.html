@@ -449,6 +449,12 @@
   </style>
 </head>
 <body>
+<div id="loginScreen" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#0b1020;color:white;">
+  <h2>🔐 Acceso al Simulador</h2>
+  <input type="password" id="password" placeholder="Ingresa tu código" style="padding:10px;margin:10px;border-radius:8px;border:none;">
+  <button onclick="checkLogin()" style="padding:10px 20px;border:none;border-radius:8px;background:#f97316;color:white;">Entrar</button>
+  <p id="error" style="color:red;display:none;">Código incorrecto</p>
+</div>
 <div class="container">
 
   <!-- ============================================================
@@ -550,23 +556,20 @@
 /* ================================================================
    CONTROL DE ACCESO
 ================================================================ */
-(function() {
-  let pass = prompt("Ingresa tu código de acceso");
-  if (pass !== "LICENCIA2026") {
-    document.body.innerHTML = `
-      <div style="
-        display:flex; flex-direction:column; align-items:center;
-        justify-content:center; min-height:100vh;
-        font-family:'Segoe UI',sans-serif; color:#eef2ff;
-        background:#090d1a;
-      ">
-        <div style="font-size:3rem; margin-bottom:16px;">🔒</div>
-        <h2 style="font-size:1.4rem; font-weight:700; margin-bottom:8px;">Acceso restringido</h2>
-        <p style="color:#8896b8; font-size:.95rem;">Código de acceso incorrecto.</p>
-      </div>`;
-    throw new Error("Acceso denegado");
+function checkLogin() {
+  const pass = document.getElementById("password").value;
+  if (pass === "LICENCIA2026") {
+    document.getElementById("loginScreen").style.display = "none";
+  } else {
+    document.getElementById("error").style.display = "block";
   }
-})();
+}
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && document.getElementById("loginScreen") &&
+      document.getElementById("loginScreen").style.display !== "none") {
+    checkLogin();
+  }
+});
 /* ================================================================
    CONTENIDO DE ESTUDIO POR TEMA
    Resúmenes y datos clave según el Reglamento de Tránsito de CR
