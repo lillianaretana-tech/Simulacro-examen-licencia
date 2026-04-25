@@ -449,11 +449,43 @@
   </style>
 </head>
 <body>
-<div id="loginScreen" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#0b1020;color:white;">
-  <h2>🔐 Acceso al Simulador</h2>
-  <input type="password" id="password" placeholder="Ingresa tu código" style="padding:10px;margin:10px;border-radius:8px;border:none;">
-  <button onclick="checkLogin()" style="padding:10px 20px;border:none;border-radius:8px;background:#f97316;color:white;">Entrar</button>
-  <p id="error" style="color:red;display:none;">Código incorrecto</p>
+<!-- ====== PANTALLA DE LOGIN ====== -->
+<div id="loginScreen" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#0b1020;color:white;position:relative;">
+  <span id="adminTrigger" onclick="countAdminClick()" style="font-size:3rem;cursor:default;user-select:none;">🔐</span>
+  <h2 style="margin:10px 0 4px;font-size:1.4rem;">Acceso al Simulador</h2>
+  <p style="color:#8896b8;font-size:.82rem;margin-bottom:18px;">Práctica de licencia · Costa Rica</p>
+  <input type="password" id="password" placeholder="Ingresa tu código de acceso" onkeydown="if(event.key==='Enter')checkLogin()"
+    style="padding:11px 14px;margin:6px;border-radius:10px;border:none;width:260px;font-size:.97rem;outline:none;">
+  <button onclick="checkLogin()"
+    style="padding:11px 28px;border:none;border-radius:10px;background:#f97316;color:white;font-size:.97rem;font-weight:600;cursor:pointer;margin-top:4px;">
+    Entrar →
+  </button>
+  <p id="loginError" style="color:#ef4444;display:none;margin-top:10px;font-size:.88rem;">Código incorrecto. Intenta de nuevo.</p>
+</div>
+
+<!-- ====== PANEL ADMIN (solo visible para ti) ====== -->
+<div id="adminPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;justify-content:center;align-items:center;">
+  <div style="background:#0f1628;border:1px solid rgba(249,115,22,.4);border-radius:20px;padding:28px 32px;width:340px;color:white;box-shadow:0 20px 50px rgba(0,0,0,.5);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="margin:0;color:#f97316;">⚙️ Panel de Administración</h3>
+      <button onclick="closeAdmin()" style="background:none;border:none;color:#8896b8;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <label style="font-size:.82rem;color:#8896b8;display:block;">Código actual</label>
+    <input type="password" id="adminCurrent" placeholder="Código actual"
+      style="width:100%;padding:10px;margin:5px 0 14px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#141d35;color:white;font-size:.9rem;box-sizing:border-box;outline:none;">
+    <label style="font-size:.82rem;color:#8896b8;display:block;">Nuevo código</label>
+    <input type="password" id="adminNew" placeholder="Nuevo código"
+      style="width:100%;padding:10px;margin:5px 0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#141d35;color:white;font-size:.9rem;box-sizing:border-box;outline:none;">
+    <label style="font-size:.82rem;color:#8896b8;display:block;">Confirmar nuevo código</label>
+    <input type="password" id="adminConfirm" placeholder="Repite el nuevo código"
+      style="width:100%;padding:10px;margin:5px 0 16px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#141d35;color:white;font-size:.9rem;box-sizing:border-box;outline:none;">
+    <p id="adminMsg" style="font-size:.85rem;margin:0 0 12px;display:none;"></p>
+    <button onclick="saveNewPassword()"
+      style="width:100%;padding:11px;background:#f97316;color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;">
+      Guardar nuevo código
+    </button>
+    <p style="font-size:.75rem;color:#4a5578;margin-top:14px;text-align:center;">Este panel no es visible para otros usuarios.</p>
+  </div>
 </div>
 <div class="container">
 
@@ -507,7 +539,22 @@
         <h2>Menú</h2>
         <span class="badge">24 temas</span>
       </div>
-      <div class="menu">
+
+      <!-- BUSCADOR -->
+      <div style="position:relative;margin-bottom:10px;">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;">🔍</span>
+        <input id="sidebarSearch" type="text" placeholder="Buscar tema o palabra clave…"
+          oninput="doSidebarSearch(this.value)"
+          style="width:100%;box-sizing:border-box;padding:9px 10px 9px 34px;border-radius:10px;
+                 border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);
+                 color:#eef2ff;font-size:.85rem;outline:none;font-family:inherit;">
+      </div>
+
+      <!-- RESULTADOS DE BÚSQUEDA (ocultos por defecto) -->
+      <div id="searchResults" style="display:none;flex-direction:column;gap:6px;margin-bottom:10px;
+           max-height:220px;overflow-y:auto;padding-right:2px;"></div>
+
+      <div id="menuButtons" class="menu">
         <button class="nav-btn active" data-view="home">
           🏠 Inicio
           <small>Resumen y acceso rápido</small>
@@ -528,11 +575,15 @@
           📊 Mi progreso
           <small>Aciertos, errores y temas débiles</small>
         </button>
+        <button class="nav-btn" data-view="signs" style="background:rgba(56,189,248,.08); border-color:rgba(56,189,248,.3);">
+          🚦 Señales Visuales
+          <small>Reconocé señales con imágenes reales</small>
+        </button>
         <button class="nav-btn" data-view="intensivo" style="background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.4);">
           ⚡ Modo Intensivo
           <small>15 min · solo lo que cae en el examen</small>
         </button>
-      </div>
+      </div><!-- /menuButtons -->
 
       <!-- Info del examen real -->
       <div style="margin-top:20px; padding:14px; border-radius:16px; border:1px solid var(--line); background:rgba(255,255,255,.03);">
@@ -556,20 +607,62 @@
 /* ================================================================
    CONTROL DE ACCESO
 ================================================================ */
+/* ---- CONTROL DE ACCESO CON CLAVE DINÁMICA ---- */
+const DEFAULT_PASS = "LICENCIA2026";
+function getPass() { return localStorage.getItem("sbm_lic_pass") || DEFAULT_PASS; }
+
 function checkLogin() {
   const pass = document.getElementById("password").value;
-  if (pass === "LICENCIA2026") {
+  const err  = document.getElementById("loginError");
+  if (pass === getPass()) {
     document.getElementById("loginScreen").style.display = "none";
+    err.style.display = "none";
   } else {
-    document.getElementById("error").style.display = "block";
+    err.style.display = "block";
+    document.getElementById("password").value = "";
+    document.getElementById("password").focus();
   }
 }
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Enter" && document.getElementById("loginScreen") &&
-      document.getElementById("loginScreen").style.display !== "none") {
-    checkLogin();
+
+/* ---- PANEL ADMIN OCULTO ---- */
+let adminClicks = 0, adminTimer = null;
+function countAdminClick() {
+  adminClicks++;
+  clearTimeout(adminTimer);
+  adminTimer = setTimeout(() => { adminClicks = 0; }, 2000);
+  if (adminClicks >= 5) {
+    adminClicks = 0;
+    document.getElementById("adminPanel").style.display = "flex";
+    document.getElementById("adminCurrent").value = "";
+    document.getElementById("adminNew").value = "";
+    document.getElementById("adminConfirm").value = "";
+    document.getElementById("adminMsg").style.display = "none";
+    document.getElementById("adminCurrent").focus();
   }
-});
+}
+function closeAdmin() { document.getElementById("adminPanel").style.display = "none"; }
+function saveNewPassword() {
+  const curr    = document.getElementById("adminCurrent").value;
+  const newPass = document.getElementById("adminNew").value.trim();
+  const confirm = document.getElementById("adminConfirm").value.trim();
+  const msg     = document.getElementById("adminMsg");
+  if (curr !== getPass()) {
+    msg.style.display = "block"; msg.style.color = "#ef4444";
+    msg.textContent = "❌ El código actual no es correcto."; return;
+  }
+  if (newPass.length < 4) {
+    msg.style.display = "block"; msg.style.color = "#ef4444";
+    msg.textContent = "❌ El nuevo código debe tener al menos 4 caracteres."; return;
+  }
+  if (newPass !== confirm) {
+    msg.style.display = "block"; msg.style.color = "#ef4444";
+    msg.textContent = "❌ Los códigos nuevos no coinciden."; return;
+  }
+  localStorage.setItem("sbm_lic_pass", newPass);
+  msg.style.display = "block"; msg.style.color = "#22c55e";
+  msg.textContent = "✅ Código actualizado correctamente.";
+  setTimeout(closeAdmin, 1800);
+}
 /* ================================================================
    CONTENIDO DE ESTUDIO POR TEMA
    Resúmenes y datos clave según el Reglamento de Tránsito de CR
@@ -1507,6 +1600,95 @@ const tips = [
   "🚦 Semáforo parpadeante <strong>rojo = Alto completo</strong>. Semáforo parpadeante <strong>amarillo = precaución</strong>. Semáforo apagado = Alto en todos los accesos."
 ];
 
+
+/* ================================================================
+   BUSCADOR DE TEMAS
+================================================================ */
+const searchIndex = [];
+const _searchResultMap = []; // índice numérico para evitar problemas de escape en onclick
+
+function buildIndex() {
+  Object.entries(topicMeta).forEach(([key, meta]) => {
+    const studyItem   = studyContent[key] || {};
+    const summaryText = (studyItem.summary  || []).join(" ");
+    const highlight   = (studyItem.highlight || "");
+    const questions   = (questionsByTopic[key] || [])
+                          .map(q => q.question + " " + q.options.join(" ")).join(" ");
+    searchIndex.push({
+      id: searchIndex.length,
+      key, label: meta.label, icon: meta.icon,
+      view: "study",
+      body: (meta.label + " " + summaryText + " " + highlight + " " + questions).toLowerCase()
+    });
+  });
+  // Señales visuales — una sola entrada global
+  const signBody = signsData.map(s =>
+    s.category + " " + s.question + " " + s.options.join(" ") + " " + s.explanation
+  ).join(" ").toLowerCase();
+  searchIndex.push({
+    id: searchIndex.length,
+    key: "signs", label: "Señales Visuales (reconocimiento)", icon: "🚦",
+    view: "signs", body: "señal señales visual tránsito alto ceda reglamentaria preventiva informativa " + signBody
+  });
+}
+
+function doSidebarSearch(query) {
+  const resultsEl = document.getElementById("searchResults");
+  const menuEl    = document.getElementById("menuButtons");
+  const q = query.trim().toLowerCase();
+
+  if (!q) {
+    resultsEl.style.display = "none";
+    menuEl.style.display    = "";
+    return;
+  }
+
+  const words = q.split(/\s+/);
+  const hits  = searchIndex.filter(item => words.every(w => item.body.includes(w)));
+
+  menuEl.style.display    = "none";
+  resultsEl.style.display = "flex";
+
+  if (!hits.length) {
+    resultsEl.innerHTML =
+      '<div style="color:#8896b8;font-size:.83rem;padding:10px 4px;">' +
+        'Sin resultados para <strong style="color:#eef2ff">' + query.replace(/</g,"&lt;") + '</strong>' +
+      '</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = hits.slice(0, 10).map(h =>
+    '<button data-search-id="' + h.id + '" ' +
+      'style="text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);' +
+             'border-radius:10px;padding:9px 12px;color:#eef2ff;cursor:pointer;font-size:.84rem;' +
+             'font-family:inherit;display:flex;align-items:center;gap:8px;width:100%;">' +
+      '<span>' + h.icon + '</span>' +
+      '<strong>' + h.label + '</strong>' +
+    '</button>'
+  ).join("") +
+  (hits.length > 10
+    ? '<div style="color:#8896b8;font-size:.78rem;padding:4px 4px 0;">+' +
+      (hits.length - 10) + ' más — refiná la búsqueda</div>'
+    : "");
+
+  // Attach click handlers via JS (evita problemas de escape en onclick HTML)
+  resultsEl.querySelectorAll("[data-search-id]").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const id   = parseInt(this.getAttribute("data-search-id"));
+      const item = searchIndex[id];
+      document.getElementById("sidebarSearch").value = "";
+      doSidebarSearch("");
+      if (item.view === "signs") { setView("signs"); return; }
+      if (item.view === "study") {
+        state.currentStudyTopic = item.key;
+        setView("study");
+        return;
+      }
+      setView(item.view);
+    });
+  });
+}
+
 /* ================================================================
    ESTADO DE LA APLICACIÓN
 ================================================================ */
@@ -1540,7 +1722,14 @@ const state = {
   intensivoSelected: null,
   intensivoFinished: false,
   intensivoTimer: null,
-  intensivoSecondsLeft: 0
+  intensivoSecondsLeft: 0,
+  // Señales visuales
+  signsQueue: [],
+  signsIndex: 0,
+  signsAnswered: false,
+  signsSelected: null,
+  signsScore: 0,
+  signsFinished: false
 };
 
 const app        = document.getElementById("app");
@@ -2099,6 +2288,371 @@ function renderIntensivo() {
   `;
 }
 
+
+/* ================================================================
+   SEÑALES DE TRÁNSITO — DATOS Y RECONOCIMIENTO VISUAL
+================================================================ */
+const signsData = [
+  /* ── REGLAMENTARIAS ── */
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="40,4 70,4 106,40 106,70 70,106 40,106 4,70 4,40" fill="#cc0000" stroke="white" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="42,11 68,11 99,42 99,68 68,99 42,99 11,68 11,42" fill="#cc0000" stroke="white" stroke-width="2"/>
+      <text x="55" y="67" text-anchor="middle" fill="white" font-size="22" font-weight="bold" font-family="Arial">ALTO</text>
+    </svg>`,
+    question:"¿Qué indica esta señal?",
+    options:["Reducir la velocidad a 30 km/h","Detención total obligatoria antes de la línea de pare","Ceder el paso a quienes vienen por la derecha","Zona de precaución temporal"],
+    answer:1,
+    explanation:"La señal de ALTO (octagonal roja) obliga a detenerse completamente antes de la línea de pare, aunque la vía esté despejada."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="55,8 105,95 5,95" fill="white" stroke="#cc0000" stroke-width="6" stroke-linejoin="round"/>
+      <polygon points="55,28 88,87 22,87" fill="#cc0000"/>
+      <text x="55" y="78" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial">CEDA</text>
+    </svg>`,
+    question:"¿Qué indica esta señal?",
+    options:["Alto total obligatorio","Dar prioridad al tránsito que viene; detenerse si es necesario","Zona de velocidad reducida","Incorporación a vía principal"],
+    answer:1,
+    explanation:"'Ceda el Paso' (triángulo invertido) indica que se debe dar prioridad al tránsito que circula; el conductor debe detenerse si hay interferencia."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="#cc0000" stroke="white" stroke-width="3"/>
+      <rect x="18" y="45" width="74" height="20" rx="4" fill="white"/>
+    </svg>`,
+    question:"¿Qué significa esta señal circular roja con barra blanca?",
+    options:["Velocidad máxima permitida","No se permite el ingreso en esta vía (Prohibido entrar)","Pare y ceda el paso","Zona de silencio"],
+    answer:1,
+    explanation:"El círculo rojo con barra blanca horizontal significa 'No entre'. Indica que la circulación en esa dirección está prohibida."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="white" stroke="#cc0000" stroke-width="8"/>
+      <text x="55" y="65" text-anchor="middle" fill="#111" font-size="36" font-weight="bold" font-family="Arial">25</text>
+    </svg>`,
+    question:"¿Qué indica esta señal?",
+    options:["Velocidad mínima de 25 km/h","Velocidad máxima permitida de 25 km/h en esa zona","Distancia de 25 metros al próximo semáforo","Límite de 25 minutos de estacionamiento"],
+    answer:1,
+    explanation:"La señal circular blanca con borde rojo y número indica la velocidad máxima permitida. En este caso, 25 km/h (zona residencial o escolar)."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="white" stroke="#cc0000" stroke-width="8"/>
+      <text x="55" y="65" text-anchor="middle" fill="#111" font-size="32" font-weight="bold" font-family="Arial">100</text>
+    </svg>`,
+    question:"¿En qué tipo de vía se aplica generalmente esta señal de 100 km/h?",
+    options:["Zona residencial","Vía urbana principal","Autopista o carretera rápida con separador","Zona escolar en horario especial"],
+    answer:2,
+    explanation:"El límite de 100 km/h corresponde a autopistas o carreteras rápidas con separador central. En autopistas especiales puede llegar a 120 km/h."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="white" stroke="#cc0000" stroke-width="7"/>
+      <!-- dos carros + diagonal -->
+      <rect x="20" y="42" width="28" height="14" rx="4" fill="#334"/>
+      <rect x="62" y="54" width="28" height="14" rx="4" fill="#334"/>
+      <circle cx="25" cy="56" r="4" fill="#667"/>
+      <circle cx="43" cy="56" r="4" fill="#667"/>
+      <circle cx="67" cy="68" r="4" fill="#667"/>
+      <circle cx="85" cy="68" r="4" fill="#667"/>
+      <line x1="25" y1="20" x2="85" y2="90" stroke="#cc0000" stroke-width="7"/>
+    </svg>`,
+    question:"¿Qué prohíbe esta señal?",
+    options:["El uso de bocina","Adelantar o rebasar vehículos","El acceso a vehículos pesados","Circular en sentido contrario"],
+    answer:1,
+    explanation:"La señal de prohibición de adelantar muestra dos vehículos y una diagonal roja. Está prohibido rebasar en ese tramo (curva, cima, visibilidad reducida, etc.)."
+  },
+
+  /* ── PREVENTIVAS ── */
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- curva derecha -->
+      <path d="M 45 75 Q 45 40 75 35" stroke="#222" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <polygon points="75,28 68,42 82,42" fill="#222"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva amarilla?",
+    options:["Prohibición de girar a la derecha","Curva o viraje a la derecha próximo; precaución","Carretera en mal estado","Zona de derrumbes"],
+    answer:1,
+    explanation:"Las señales preventivas en forma de diamante amarillo advierten al conductor de condiciones especiales. Esta indica una curva próxima a la derecha."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- persona caminando -->
+      <circle cx="55" cy="33" r="7" fill="#222"/>
+      <line x1="55" y1="40" x2="55" y2="64" stroke="#222" stroke-width="5"/>
+      <line x1="55" y1="50" x2="42" y2="60" stroke="#222" stroke-width="4"/>
+      <line x1="55" y1="50" x2="68" y2="60" stroke="#222" stroke-width="4"/>
+      <line x1="55" y1="64" x2="44" y2="78" stroke="#222" stroke-width="4"/>
+      <line x1="55" y1="64" x2="66" y2="78" stroke="#222" stroke-width="4"/>
+    </svg>`,
+    question:"¿Qué indica esta señal preventiva?",
+    options:["Prohibición de peatones en la vía","Zona de cruce peatonal próxima; precaución con peatones","Zona escolar exclusiva","Sendero peatonal habilitado"],
+    answer:1,
+    explanation:"Esta señal preventiva advierte al conductor que hay un cruce peatonal próximo. Debe reducir la velocidad y estar atento a personas cruzando."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- semáforo simple -->
+      <rect x="43" y="28" width="24" height="54" rx="5" fill="#222"/>
+      <circle cx="55" cy="38" r="7" fill="#ef4444"/>
+      <circle cx="55" cy="55" r="7" fill="#eab308"/>
+      <circle cx="55" cy="72" r="7" fill="#22c55e"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva?",
+    options:["El semáforo está averiado","Hay un semáforo próximo; prepárese para detenerse","Zona de velocidad mínima","Intersección sin control"],
+    answer:1,
+    explanation:"Esta señal preventiva indica que hay un semáforo próximo. El conductor debe reducir la velocidad y prepararse para obedecer la señal del semáforo."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- intersección cruz -->
+      <rect x="48" y="28" width="14" height="54" rx="2" fill="#222"/>
+      <rect x="28" y="48" width="54" height="14" rx="2" fill="#222"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva de diamante amarillo?",
+    options:["Cruce de ferrocarril próximo","Intersección o cruce próximo; precaución","Zona de obras en la vía","Cruce de peatones en altura"],
+    answer:1,
+    explanation:"El diamante amarillo con cruz indica una intersección próxima. El conductor debe reducir la velocidad y estar preparado para ceder o detenerse."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <!-- Zona escolar - rectángulo amarillo -->
+      <rect x="5" y="20" width="100" height="70" rx="6" fill="#f5c518" stroke="#333" stroke-width="3"/>
+      <text x="55" y="42" text-anchor="middle" fill="#111" font-size="10" font-weight="bold" font-family="Arial">ZONA</text>
+      <text x="55" y="56" text-anchor="middle" fill="#111" font-size="10" font-weight="bold" font-family="Arial">ESCOLAR</text>
+      <!-- dos niños simplificados -->
+      <circle cx="38" cy="65" r="5" fill="#222"/>
+      <line x1="38" y1="70" x2="38" y2="82" stroke="#222" stroke-width="3.5"/>
+      <circle cx="60" cy="63" r="5" fill="#222"/>
+      <line x1="60" y1="68" x2="60" y2="80" stroke="#222" stroke-width="3.5"/>
+    </svg>`,
+    question:"¿Qué significa esta señal y qué velocidad máxima aplica en esa zona?",
+    options:["Zona recreativa; 40 km/h","Zona escolar; la velocidad máxima es 25 km/h en los horarios señalados","Zona escolar; la velocidad máxima es 15 km/h siempre","Zona de juegos; 30 km/h"],
+    answer:1,
+    explanation:"La señal de Zona Escolar indica mayor precaución con niños. La velocidad máxima en estos sectores es de 25 km/h durante los horarios de actividad escolar."
+  },
+
+  /* ── INFORMATIVAS ── */
+  {
+    category:"Informativa",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="5" width="100" height="100" rx="10" fill="#1a56a0" stroke="white" stroke-width="3"/>
+      <text x="55" y="72" text-anchor="middle" fill="white" font-size="62" font-weight="bold" font-family="Arial">H</text>
+    </svg>`,
+    question:"¿Qué indica esta señal azul con la letra H?",
+    options:["Hotel próximo","Hospital o centro médico en las proximidades","Helipuerto autorizado","Hidratación o fuente de agua"],
+    answer:1,
+    explanation:"La señal azul con 'H' indica la proximidad de un hospital o centro de atención médica. Es una señal informativa de servicios."
+  },
+  {
+    category:"Informativa",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="5" width="100" height="100" rx="10" fill="#1a56a0" stroke="white" stroke-width="3"/>
+      <text x="55" y="72" text-anchor="middle" fill="white" font-size="62" font-weight="bold" font-family="Arial">P</text>
+    </svg>`,
+    question:"¿Qué indica esta señal azul con la letra P?",
+    options:["Prohibido estacionar","Zona de estacionamiento permitido","Peaje próximo","Paso peatonal exclusivo"],
+    answer:1,
+    explanation:"La señal azul con 'P' indica una zona de estacionamiento permitido. A diferencia de la zona amarilla en el pavimento, aquí sí se puede estacionar."
+  },
+  {
+    category:"Informativa",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="28" width="100" height="55" rx="8" fill="#1a6b2a" stroke="white" stroke-width="3"/>
+      <text x="55" y="50" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="Arial">RUTA NACIONAL</text>
+      <text x="55" y="72" text-anchor="middle" fill="white" font-size="28" font-weight="bold" font-family="Arial">32</text>
+    </svg>`,
+    question:"¿Qué tipo de señal es esta y qué información proporciona?",
+    options:["Señal preventiva; indica zona de obras en ruta 32","Señal informativa de ruta; indica el número de la vía o carretera nacional","Señal reglamentaria; límite de velocidad de 32 km/h","Señal de servicios; combustible a 32 km"],
+    answer:1,
+    explanation:"Las señales verdes rectangulares son informativas de ruta. Indican el número de la carretera nacional o ruta por la que se circula."
+  },
+  {
+    category:"Especial",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <!-- Fondo naranja — señal de obras -->
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f97316" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- persona con pala (obrero) simplificada -->
+      <circle cx="55" cy="33" r="6" fill="#222"/>
+      <line x1="55" y1="39" x2="55" y2="58" stroke="#222" stroke-width="5"/>
+      <line x1="55" y1="48" x2="44" y2="56" stroke="#222" stroke-width="4"/>
+      <line x1="55" y1="48" x2="66" y2="43" stroke="#222" stroke-width="4"/>
+      <line x1="55" y1="58" x2="46" y2="72" stroke="#222" stroke-width="4"/>
+      <line x1="55" y1="58" x2="64" y2="72" stroke="#222" stroke-width="4"/>
+    </svg>`,
+    question:"¿Qué indica una señal con fondo naranja en Costa Rica?",
+    options:["Señal reglamentaria de velocidad máxima","Señal temporal de zona de obras o construcción vial; prevalece sobre señales permanentes","Señal informativa de servicios de emergencia","Señal preventiva de clima adverso"],
+    answer:1,
+    explanation:"Las señales de fondo naranja son temporales y corresponden a zonas de obras o construcción. Prevalecen sobre las señales permanentes mientras estén vigentes."
+  },
+  {
+    category:"Especial",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <!-- Señal de carril reversible X roja -->
+      <rect x="5" y="5" width="100" height="100" rx="10" fill="#1a1a2e" stroke="#333" stroke-width="2"/>
+      <line x1="25" y1="25" x2="85" y2="85" stroke="#cc0000" stroke-width="14" stroke-linecap="round"/>
+      <line x1="85" y1="25" x2="25" y2="85" stroke="#cc0000" stroke-width="14" stroke-linecap="round"/>
+    </svg>`,
+    question:"¿Qué significa una X roja sobre un carril en una vía con carriles reversibles?",
+    options:["El carril tiene velocidad reducida por obras","El carril está cerrado; ingresar está terminantemente prohibido","El carril cambiará de dirección en 500 metros","El carril es exclusivo para buses"],
+    answer:1,
+    explanation:"La X roja sobre un carril reversible indica que ese carril está cerrado. Ingresar a él es una infracción grave y puede provocar colisión frontal con tráfico en sentido contrario."
+  }
+];
+
+/* ================================================================
+   RENDER: SEÑALES VISUALES
+================================================================ */
+function renderSigns() {
+  if (!state.signsQueue.length) {
+    // Pantalla de inicio de la sección
+    const cats = [
+      { key:"Reglamentaria", color:"#ef4444", icon:"🛑", desc:"Obligan o prohíben. Círculos rojos, octágonos." },
+      { key:"Preventiva",    color:"#f97316", icon:"⚠️", desc:"Advierten de peligros. Diamante amarillo." },
+      { key:"Informativa",   color:"#22c55e", icon:"ℹ️", desc:"Orientan e informan. Rectángulos verdes/azules." },
+      { key:"Especial",      color:"#a78bfa", icon:"🟠", desc:"Obras, carriles reversibles, temporales." }
+    ];
+    const cards = cats.map(c => `
+      <div style="border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;background:rgba(255,255,255,.03);">
+        <div style="font-size:1.3rem;">${c.icon}</div>
+        <div style="font-weight:700;color:${c.color};margin:4px 0;">${c.key}s</div>
+        <div style="font-size:.83rem;color:#8896b8;">${c.desc}</div>
+      </div>`).join("");
+    return `
+      <div class="section-title">
+        <h2>🚦 Señales Visuales</h2>
+        <span class="badge">Reconocimiento</span>
+      </div>
+      <div class="box">
+        <p style="color:#8896b8;font-size:.93rem;line-height:1.6;margin-bottom:16px;">
+          Practica el reconocimiento de señales de tránsito de Costa Rica.
+          Se muestran <strong style="color:var(--text)">${signsData.length} señales</strong> en orden aleatorio con sus opciones de respuesta.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;">${cards}</div>
+        <button class="primary-btn" onclick="startSigns()" style="width:100%;">
+          🚀 Iniciar práctica de señales
+        </button>
+      </div>`;
+  }
+
+  if (state.signsFinished) {
+    const pct = Math.round((state.signsScore / signsData.length) * 100);
+    const color = pct >= 75 ? "var(--green)" : pct >= 50 ? "var(--yellow)" : "var(--red)";
+    return `
+      <div class="section-title"><h2>🏁 Resultado</h2></div>
+      <div class="box" style="text-align:center;">
+        <div style="font-size:3rem;margin-bottom:8px;">🚦</div>
+        <div style="font-size:2.5rem;font-weight:700;color:${color};">${pct}%</div>
+        <div style="color:#8896b8;margin:6px 0 18px;">${state.signsScore} de ${signsData.length} señales correctas</div>
+        <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px;margin-bottom:16px;font-size:.9rem;line-height:1.6;">
+          ${pct >= 75
+            ? "✅ <strong>¡Excelente!</strong> Reconoces bien las señales de tránsito."
+            : pct >= 50
+              ? "⚠️ <strong>Regular.</strong> Repasa las señales que fallaste antes del examen."
+              : "❌ <strong>Necesitas más práctica.</strong> Las señales son fundamentales en el examen COSEVI."}
+        </div>
+        <div class="action-row">
+          <button class="primary-btn" onclick="startSigns()">🔄 Repetir</button>
+          <button class="secondary-btn" onclick="stopSigns()">↩ Salir</button>
+        </div>
+      </div>`;
+  }
+
+  const sign = state.signsQueue[state.signsIndex];
+  const catColors = { Reglamentaria:"#ef4444", Preventiva:"#f97316", Informativa:"#22c55e", Especial:"#a78bfa" };
+  const optionsHtml = sign.options.map((opt, i) => {
+    let cls = "option-btn";
+    if (state.signsAnswered) {
+      if (i === sign.answer) cls += " correct";
+      else if (i === state.signsSelected) cls += " wrong";
+    }
+    return `<button class="${cls}" ${state.signsAnswered?"disabled":""} onclick="doAnswerSign(${i})">${opt}</button>`;
+  }).join("");
+
+  const feedbackHtml = state.signsAnswered ? `
+    <div class="feedback ${state.signsSelected === sign.answer ? "good" : "bad"}">
+      ${state.signsSelected === sign.answer ? "✅" : "❌"} ${sign.explanation}
+    </div>` : "";
+
+  return `
+    <div class="section-title">
+      <h2>🚦 Señales Visuales</h2>
+      <span class="badge" style="color:${catColors[sign.category]||"#8896b8"};">${sign.category}</span>
+    </div>
+    <div class="box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:.85rem;color:#8896b8;">
+        <span>Señal ${state.signsIndex + 1} de ${signsData.length}</span>
+        <span style="color:var(--green);">✅ ${state.signsScore} correctas</span>
+      </div>
+      <div style="text-align:center;padding:18px 0;">
+        ${sign.svg}
+      </div>
+      <p class="question">${sign.question}</p>
+      <div class="options">${optionsHtml}</div>
+      ${feedbackHtml}
+      <div class="action-row" style="margin-top:14px;">
+        ${state.signsAnswered
+          ? `<button class="primary-btn" onclick="doNextSign()">Siguiente →</button>`
+          : ""}
+        <button class="secondary-btn" onclick="stopSigns()">↩ Salir</button>
+      </div>
+    </div>`;
+}
+
+window.startSigns = function() {
+  state.signsQueue    = shuffle([...signsData]);
+  state.signsIndex    = 0;
+  state.signsAnswered = false;
+  state.signsSelected = null;
+  state.signsScore    = 0;
+  state.signsFinished = false;
+  render();
+};
+
+window.doAnswerSign = function(idx) {
+  if (state.signsAnswered) return;
+  state.signsAnswered = true;
+  state.signsSelected = idx;
+  if (idx === state.signsQueue[state.signsIndex].answer) state.signsScore++;
+  render();
+};
+
+window.doNextSign = function() {
+  if (state.signsIndex < state.signsQueue.length - 1) {
+    state.signsIndex++;
+    state.signsAnswered = false;
+    state.signsSelected = null;
+  } else {
+    state.signsFinished = true;
+  }
+  render();
+};
+
+window.stopSigns = function() {
+  state.signsQueue    = [];
+  state.signsFinished = false;
+  state.signsAnswered = false;
+  state.signsIndex    = 0;
+  state.signsScore    = 0;
+  render();
+};
+
 /* ================================================================
    RENDER PRINCIPAL
 ================================================================ */
@@ -2111,6 +2665,7 @@ function render() {
     case "mock":      html = renderMock();      break;
     case "progress":  html = renderProgress();  break;
     case "intensivo": html = renderIntensivo(); break;
+    case "signs":     html = renderSigns();     break;
   }
   app.innerHTML = html;
   updateGlobalStats();
@@ -2332,6 +2887,7 @@ window.startMock   = window.startMock;
 /* ================================================================
    ARRANQUE
 ================================================================ */
+buildIndex();
 render();
 </script>
 </body>
