@@ -1657,34 +1657,66 @@ function doSidebarSearch(query) {
     return;
   }
 
-  resultsEl.innerHTML = hits.slice(0, 10).map(h =>
-    '<button data-search-id="' + h.id + '" ' +
-      'style="text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);' +
-             'border-radius:10px;padding:9px 12px;color:#eef2ff;cursor:pointer;font-size:.84rem;' +
-             'font-family:inherit;display:flex;align-items:center;gap:8px;width:100%;">' +
-      '<span>' + h.icon + '</span>' +
-      '<strong>' + h.label + '</strong>' +
-    '</button>'
-  ).join("") +
-  (hits.length > 10
+  // Para temas de estudio mostramos dos botones (Estudiar / Practicar)
+  // Para señales mostramos uno solo
+  resultsEl.innerHTML = hits.slice(0, 8).map(h => {
+    if (h.view === "signs") {
+      return '<div data-search-id="' + h.id + '" class="sr-item" ' +
+        'style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);' +
+               'border-radius:12px;padding:10px 12px;">' +
+        '<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">' +
+          '<span>' + h.icon + '</span>' +
+          '<strong style="font-size:.85rem;color:#eef2ff;">' + h.label + '</strong>' +
+        '</div>' +
+        '<button data-action="signs" data-id="' + h.id + '" ' +
+          'style="width:100%;padding:7px;border:none;border-radius:8px;background:#38bdf8;' +
+                 'color:#0b1020;font-size:.8rem;font-weight:700;cursor:pointer;">' +
+          '🚦 Ir a Señales Visuales' +
+        '</button>' +
+      '</div>';
+    }
+    return '<div class="sr-item" ' +
+      'style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);' +
+             'border-radius:12px;padding:10px 12px;">' +
+      '<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">' +
+        '<span>' + h.icon + '</span>' +
+        '<strong style="font-size:.85rem;color:#eef2ff;">' + h.label + '</strong>' +
+      '</div>' +
+      '<div style="display:flex;gap:7px;">' +
+        '<button data-action="study" data-id="' + h.id + '" ' +
+          'style="flex:1;padding:7px 4px;border:none;border-radius:8px;background:#f97316;' +
+                 'color:white;font-size:.8rem;font-weight:700;cursor:pointer;">' +
+          '📖 Estudiar' +
+        '</button>' +
+        '<button data-action="practice" data-id="' + h.id + '" ' +
+          'style="flex:1;padding:7px 4px;border:none;border-radius:8px;' +
+                 'background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);' +
+                 'color:#eef2ff;font-size:.8rem;font-weight:700;cursor:pointer;">' +
+          '✏️ Practicar' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }).join("") +
+  (hits.length > 8
     ? '<div style="color:#8896b8;font-size:.78rem;padding:4px 4px 0;">+' +
-      (hits.length - 10) + ' más — refiná la búsqueda</div>'
+      (hits.length - 8) + ' más — refiná la búsqueda</div>'
     : "");
 
-  // Attach click handlers via JS (evita problemas de escape en onclick HTML)
-  resultsEl.querySelectorAll("[data-search-id]").forEach(btn => {
+  // Attach handlers
+  resultsEl.querySelectorAll("button[data-action]").forEach(btn => {
     btn.addEventListener("click", function() {
-      const id   = parseInt(this.getAttribute("data-search-id"));
-      const item = searchIndex[id];
+      const action = this.getAttribute("data-action");
+      const item   = searchIndex[parseInt(this.getAttribute("data-id"))];
       document.getElementById("sidebarSearch").value = "";
       doSidebarSearch("");
-      if (item.view === "signs") { setView("signs"); return; }
-      if (item.view === "study") {
-        state.currentStudyTopic = item.key;
-        setView("study");
-        return;
-      }
-      setView(item.view);
+      if (action === "signs")    { setView("signs"); }
+      else if (action === "study")    { state.currentStudyTopic = item.key; setView("study"); }
+      else if (action === "practice") { doStartPracticeTopic(item.key); }
+      // Scroll al área de contenido automáticamente
+      setTimeout(() => {
+        const appEl = document.getElementById("app");
+        if (appEl) appEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
     });
   });
 }
