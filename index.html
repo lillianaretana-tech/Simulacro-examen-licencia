@@ -579,6 +579,18 @@
           🚦 Señales Visuales
           <small>Reconocé señales con imágenes reales</small>
         </button>
+        <button class="nav-btn" data-view="flashcard" style="background:rgba(168,85,247,.08); border-color:rgba(168,85,247,.3);">
+          🃏 Flashcards Señales
+          <small>Adivina la señal antes de ver opciones</small>
+        </button>
+        <button class="nav-btn" data-view="bookmark" style="background:rgba(250,204,21,.08); border-color:rgba(250,204,21,.3);">
+          ⭐ Preguntas Difíciles
+          <small>Repasá las que marcaste como difíciles</small>
+        </button>
+        <button class="nav-btn" data-view="diagnostic" style="background:rgba(34,197,94,.08); border-color:rgba(34,197,94,.3);">
+          🎯 Diagnóstico Inicial
+          <small>Detectá tus puntos débiles en 10 preguntas</small>
+        </button>
         <button class="nav-btn" data-view="intensivo" style="background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.4);">
           ⚡ Modo Intensivo
           <small>15 min · solo lo que cae en el examen</small>
@@ -595,6 +607,20 @@
           🏢 Sede: <strong style="color:var(--text)">Oficinas COSEVI</strong>
         </div>
       </div>
+
+      <!-- Imprimir resumen -->
+      <button onclick="printSummary()"
+        style="margin-top:12px;width:100%;padding:11px;border-radius:12px;
+               background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+               color:#eef2ff;font-family:inherit;font-size:.85rem;cursor:pointer;
+               display:flex;align-items:center;justify-content:center;gap:8px;">
+        🖨️ Imprimir hoja de resumen
+      </button>
+
+      <!-- Recordatorio de estudio -->
+      <div id="studyReminder" style="display:none;margin-top:10px;padding:10px 12px;
+           border-radius:12px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);
+           font-size:.8rem;color:#fed7aa;line-height:1.5;"></div>
     </aside>
 
     <!-- ÁREA DE CONTENIDO -->
@@ -1761,7 +1787,25 @@ const state = {
   signsAnswered: false,
   signsSelected: null,
   signsScore: 0,
-  signsFinished: false
+  signsFinished: false,
+  // Flashcard señales
+  flashQueue: [],
+  flashIndex: 0,
+  flashRevealed: false,
+  flashScore: 0,
+  flashFinished: false,
+  // Preguntas difíciles (bookmark)
+  bookmarkPracticeIndex: 0,
+  bookmarkAnswered: false,
+  bookmarkSelected: null,
+  bookmarkQueue: [],
+  // Diagnóstico
+  diagQueue: [],
+  diagIndex: 0,
+  diagAnswered: false,
+  diagSelected: null,
+  diagFinished: false,
+  diagResults: []
 };
 
 const app        = document.getElementById("app");
@@ -1797,6 +1841,14 @@ function setView(view) {
     btn.classList.toggle("active", btn.dataset.view === view)
   );
   render();
+  // Scroll al área de contenido (útil en móvil donde el menú queda arriba)
+  setTimeout(() => {
+    const appEl = document.getElementById("app");
+    if (appEl) {
+      const top = appEl.getBoundingClientRect().top + window.pageYOffset - 10;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  }, 60);
 }
 
 navButtons.forEach(btn => {
@@ -1899,13 +1951,36 @@ function renderStudy() {
     </div>
   ` : `<div class="empty">👆 Selecciona un tema arriba para ver su resumen y puntos clave antes de practicar.</div>`;
 
+  // Si hay un tema seleccionado, mostrar SOLO el detalle (como hace práctica)
+  if (selected) {
+    return `
+      <div class="section-title">
+        <h2>Estudiar</h2>
+        <span class="badge" style="color:${meta.accent};">${meta.icon} ${selected.title}</span>
+      </div>
+      <div class="box" style="border-color:${meta.accent}33">
+        <h3>${meta.icon} ${selected.title}</h3>
+        <ul class="study-list" style="--accent:${meta.accent}">
+          ${selected.summary.map(item => `<li>${item}</li>`).join("")}
+        </ul>
+        <div class="study-highlight">
+          ${selected.highlight}
+        </div>
+        <div class="action-row">
+          <button class="primary-btn" onclick="doStartPracticeTopic('${state.currentStudyTopic}')">✏️ Practicar este tema</button>
+          <button class="secondary-btn" onclick="state.currentStudyTopic=null; render()">← Ver todos los temas</button>
+        </div>
+      </div>`;
+  }
+
+  // Sin tema seleccionado: mostrar la parrilla completa
   return `
     <div class="section-title">
       <h2>Estudiar</h2>
       <span class="badge">Resúmenes por tema</span>
     </div>
     <div class="topic-grid">${topicCards}</div>
-    ${selectedHtml}
+    <div class="empty">👆 Selecciona un tema para ver su resumen y puntos clave.</div>
   `;
 }
 
@@ -1958,12 +2033,22 @@ function renderPractice() {
     </div>
   ` : "";
 
+  const bookmarks   = JSON.parse(localStorage.getItem("sbm_bookmarks") || "[]");
+  const qId        = state.practiceTopic + "|" + q.question.substring(0,40);
+  const isBookmark = bookmarks.includes(qId);
+
   return `
     <div class="section-title">
       <h2>${meta.icon} ${meta.label}</h2>
       <span class="badge">Pregunta ${qNum}</span>
     </div>
     <div class="box">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
+        <button onclick="toggleBookmark('${qId.replace(/'/g,"\'")}')"
+          style="background:none;border:none;cursor:pointer;font-size:1.3rem;padding:2px 6px;
+                 opacity:${isBookmark?1:.35};transition:.2s;"
+          title="${isBookmark?"Quitar de difíciles":"Marcar como difícil"}">⭐</button>
+      </div>
       <div class="question">${q.question}</div>
       <div class="options">${optionsHtml}</div>
       ${feedbackHtml}
@@ -2696,8 +2781,11 @@ function render() {
     case "practice":  html = renderPractice();  break;
     case "mock":      html = renderMock();      break;
     case "progress":  html = renderProgress();  break;
-    case "intensivo": html = renderIntensivo(); break;
-    case "signs":     html = renderSigns();     break;
+    case "intensivo":   html = renderIntensivo();   break;
+    case "signs":       html = renderSigns();       break;
+    case "flashcard":   html = renderFlashcard();   break;
+    case "bookmark":    html = renderBookmarks();   break;
+    case "diagnostic":  html = renderDiagnostic();  break;
   }
   app.innerHTML = html;
   updateGlobalStats();
@@ -2708,7 +2796,14 @@ function render() {
 ================================================================ */
 window.doShowStudyTopic = function(key) {
   state.currentStudyTopic = key;
-  render();
+  setView("study");
+  setTimeout(() => {
+    const appEl = document.getElementById("app");
+    if (appEl) {
+      const top = appEl.getBoundingClientRect().top + window.pageYOffset - 10;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  }, 80);
 };
 
 /* ================================================================
@@ -2721,6 +2816,13 @@ window.doStartPracticeTopic = function(key) {
   state.practiceSelected  = null;
   state.practiceQueue     = shuffle(questionsByTopic[key]);
   setView("practice");
+  setTimeout(() => {
+    const appEl = document.getElementById("app");
+    if (appEl) {
+      const top = appEl.getBoundingClientRect().top + window.pageYOffset - 10;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  }, 80);
 };
 
 window.doAnswerPractice = function(idx) {
@@ -2910,6 +3012,434 @@ window.stopIntensivo = function() {
   setView("intensivo");
 };
 
+
+/* ================================================================
+   ⭐ PREGUNTAS DIFÍCILES — BOOKMARK
+================================================================ */
+window.toggleBookmark = function(qId) {
+  let bm = JSON.parse(localStorage.getItem("sbm_bookmarks") || "[]");
+  if (bm.includes(qId)) bm = bm.filter(x => x !== qId);
+  else bm.push(qId);
+  localStorage.setItem("sbm_bookmarks", JSON.stringify(bm));
+  render();
+};
+
+function getBookmarkedQuestions() {
+  const bm = JSON.parse(localStorage.getItem("sbm_bookmarks") || "[]");
+  const all = [];
+  Object.entries(questionsByTopic).forEach(([topic, qs]) => {
+    qs.forEach(q => {
+      const id = topic + "|" + q.question.substring(0,40);
+      if (bm.includes(id)) all.push({ ...q, _topic: topic, _id: id });
+    });
+  });
+  return all;
+}
+
+function renderBookmarks() {
+  const qs = getBookmarkedQuestions();
+  if (!qs.length) {
+    return `
+      <div class="section-title"><h2>⭐ Preguntas Difíciles</h2></div>
+      <div class="box" style="text-align:center;padding:30px 20px;">
+        <div style="font-size:3rem;margin-bottom:12px;">⭐</div>
+        <h3 style="margin-bottom:8px;">Todavía no tenés preguntas marcadas</h3>
+        <p style="color:#8896b8;font-size:.9rem;line-height:1.6;">
+          Mientras practicás, tocá la ⭐ en cualquier pregunta que te parezca difícil
+          o que querás repasar antes del examen.
+        </p>
+        <button class="primary-btn" style="margin-top:16px;" onclick="setView('practice')">
+          ✏️ Ir a Practicar
+        </button>
+      </div>`;
+  }
+
+  if (!state.bookmarkQueue.length) {
+    // pantalla de inicio del modo bookmark
+    return `
+      <div class="section-title">
+        <h2>⭐ Preguntas Difíciles</h2>
+        <span class="badge">${qs.length} marcadas</span>
+      </div>
+      <div class="box">
+        <p style="color:#8896b8;font-size:.93rem;line-height:1.6;margin-bottom:16px;">
+          Tenés <strong style="color:#facc15">${qs.length} preguntas marcadas como difíciles</strong>.
+          Repasalas antes del examen para asegurarte de dominarlas.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+          <button class="primary-btn" onclick="startBookmarkPractice()">🔄 Practicar todas</button>
+          <button class="secondary-btn" onclick="clearAllBookmarks()">🗑️ Borrar todas</button>
+        </div>
+        <div style="display:grid;gap:8px;">
+          ${qs.map(q => `
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+                        border-radius:10px;padding:10px 12px;font-size:.85rem;
+                        display:flex;justify-content:space-between;align-items:center;gap:10px;">
+              <div>
+                <span style="color:#facc15;font-size:.75rem;font-weight:700;margin-right:6px;">
+                  ${topicMeta[q._topic]?.icon || "📚"} ${topicMeta[q._topic]?.label || q._topic}
+                </span>
+                <span style="color:#eef2ff;">${q.question.substring(0,60)}${q.question.length>60?"…":""}</span>
+              </div>
+              <button onclick="toggleBookmark('${q._id.replace(/'/g,"\'")}'); render();"
+                style="background:none;border:none;cursor:pointer;font-size:1.1rem;flex-shrink:0;">⭐</button>
+            </div>`).join("")}
+        </div>
+      </div>`;
+  }
+
+  // Modo práctica de bookmarks
+  const q    = state.bookmarkQueue[state.bookmarkPracticeIndex];
+  const meta = topicMeta[q._topic] || {};
+  const optHtml = q.options.map((opt, i) => {
+    let cls = "option-btn";
+    if (state.bookmarkAnswered) {
+      if (i === q.answer) cls += " correct";
+      else if (i === state.bookmarkSelected) cls += " wrong";
+    }
+    return `<button class="${cls}" ${state.bookmarkAnswered?"disabled":""} onclick="doAnswerBookmark(${i})">${String.fromCharCode(65+i)}. ${opt}</button>`;
+  }).join("");
+  const feedHtml = state.bookmarkAnswered ? `
+    <div class="feedback ${state.bookmarkSelected===q.answer?"good":"bad"}">
+      <strong>${state.bookmarkSelected===q.answer?"✅ Correcto":"❌ Incorrecto"}</strong><br><br>${q.explanation}
+    </div>` : "";
+
+  return `
+    <div class="section-title">
+      <h2>⭐ Preguntas Difíciles</h2>
+      <span class="badge">${state.bookmarkPracticeIndex+1} / ${state.bookmarkQueue.length}</span>
+    </div>
+    <div class="box">
+      <div style="font-size:.8rem;color:#facc15;font-weight:700;margin-bottom:8px;">
+        ${meta.icon||"📚"} ${meta.label||q._topic}
+      </div>
+      <div class="question">${q.question}</div>
+      <div class="options">${optHtml}</div>
+      ${feedHtml}
+      <div class="action-row" style="margin-top:12px;">
+        ${state.bookmarkAnswered
+          ? `<button class="primary-btn" onclick="doNextBookmark()">Siguiente →</button>`
+          : ""}
+        <button class="secondary-btn" onclick="state.bookmarkQueue=[]; render()">↩ Ver lista</button>
+      </div>
+    </div>`;
+}
+
+window.startBookmarkPractice = function() {
+  state.bookmarkQueue           = shuffle(getBookmarkedQuestions());
+  state.bookmarkPracticeIndex   = 0;
+  state.bookmarkAnswered        = false;
+  state.bookmarkSelected        = null;
+  render();
+};
+window.doAnswerBookmark = function(idx) {
+  if (state.bookmarkAnswered) return;
+  state.bookmarkAnswered = true;
+  state.bookmarkSelected = idx;
+  render();
+};
+window.doNextBookmark = function() {
+  if (state.bookmarkPracticeIndex < state.bookmarkQueue.length - 1) {
+    state.bookmarkPracticeIndex++;
+    state.bookmarkAnswered = false;
+    state.bookmarkSelected = null;
+  } else {
+    state.bookmarkQueue = [];
+  }
+  render();
+};
+window.clearAllBookmarks = function() {
+  if (confirm("¿Borrar todas las preguntas marcadas?")) {
+    localStorage.removeItem("sbm_bookmarks");
+    render();
+  }
+};
+
+/* ================================================================
+   🃏 FLASHCARDS DE SEÑALES
+================================================================ */
+function renderFlashcard() {
+  if (!state.flashQueue.length) {
+    return `
+      <div class="section-title"><h2>🃏 Flashcards de Señales</h2></div>
+      <div class="box" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">🃏</div>
+        <h3 style="margin-bottom:8px;">Modo Flashcard</h3>
+        <p style="color:#8896b8;font-size:.9rem;line-height:1.6;margin-bottom:18px;">
+          Mirá la señal e intentá adivinar qué significa <em>antes</em> de revelar la respuesta.
+          Más desafiante que el modo quiz.
+        </p>
+        <button class="primary-btn" style="width:100%;" onclick="startFlashcard()">🚀 Comenzar Flashcards</button>
+      </div>`;
+  }
+
+  if (state.flashFinished) {
+    const pct = Math.round(state.flashScore / signsData.length * 100);
+    const color = pct >= 75 ? "var(--green)" : pct >= 50 ? "var(--yellow)" : "var(--red)";
+    return `
+      <div class="section-title"><h2>🃏 Resultado Flashcards</h2></div>
+      <div class="box" style="text-align:center;">
+        <div style="font-size:2.5rem;font-weight:700;color:${color};">${pct}%</div>
+        <div style="color:#8896b8;margin:6px 0 18px;">${state.flashScore} de ${signsData.length} señales adivinadas</div>
+        <div class="action-row" style="justify-content:center;">
+          <button class="primary-btn" onclick="startFlashcard()">🔄 Repetir</button>
+          <button class="secondary-btn" onclick="state.flashQueue=[]; state.flashFinished=false; render()">↩ Salir</button>
+        </div>
+      </div>`;
+  }
+
+  const sign = state.flashQueue[state.flashIndex];
+  const catColors = { Reglamentaria:"#ef4444", Preventiva:"#f97316", Informativa:"#22c55e", Especial:"#a78bfa" };
+
+  if (!state.flashRevealed) {
+    return `
+      <div class="section-title">
+        <h2>🃏 Flashcard</h2>
+        <span class="badge">${state.flashIndex+1} / ${signsData.length}</span>
+      </div>
+      <div class="box" style="text-align:center;">
+        <p style="color:#8896b8;font-size:.85rem;margin-bottom:16px;">
+          Pensá qué significa esta señal y luego revelá la respuesta
+        </p>
+        <div style="padding:20px 0;">${sign.svg}</div>
+        <button class="primary-btn" style="width:100%;margin-top:8px;" onclick="doRevealFlash()">
+          👁️ Revelar respuesta
+        </button>
+        <button class="secondary-btn" style="width:100%;margin-top:8px;" onclick="state.flashQueue=[]; render()">↩ Salir</button>
+      </div>`;
+  }
+
+  return `
+    <div class="section-title">
+      <h2>🃏 Flashcard</h2>
+      <span class="badge" style="color:${catColors[sign.category]};">${sign.category}</span>
+    </div>
+    <div class="box" style="text-align:center;">
+      <div style="padding:12px 0;">${sign.svg}</div>
+      <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:14px;margin:12px 0;text-align:left;">
+        <div style="font-weight:700;color:#eef2ff;margin-bottom:6px;">${sign.question}</div>
+        <div style="color:#22c55e;font-weight:600;margin-bottom:8px;">
+          ✅ ${sign.options[sign.answer]}
+        </div>
+        <div style="font-size:.85rem;color:#8896b8;line-height:1.6;">${sign.explanation}</div>
+      </div>
+      <p style="color:#8896b8;font-size:.9rem;margin-bottom:12px;">¿La sabías?</p>
+      <div class="action-row" style="justify-content:center;">
+        <button class="primary-btn" onclick="doFlashResult(true)">✅ Sí la sabía</button>
+        <button class="secondary-btn" style="border-color:rgba(239,68,68,.4);color:var(--red);" onclick="doFlashResult(false)">❌ No la sabía</button>
+      </div>
+    </div>`;
+}
+
+window.startFlashcard = function() {
+  state.flashQueue    = shuffle([...signsData]);
+  state.flashIndex    = 0;
+  state.flashRevealed = false;
+  state.flashScore    = 0;
+  state.flashFinished = false;
+  render();
+};
+window.doRevealFlash = function() { state.flashRevealed = true; render(); };
+window.doFlashResult = function(knew) {
+  if (knew) state.flashScore++;
+  if (state.flashIndex < state.flashQueue.length - 1) {
+    state.flashIndex++;
+    state.flashRevealed = false;
+  } else {
+    state.flashFinished = true;
+  }
+  render();
+};
+
+/* ================================================================
+   🎯 DIAGNÓSTICO INICIAL
+================================================================ */
+function renderDiagnostic() {
+  if (!state.diagQueue.length && !state.diagFinished) {
+    return `
+      <div class="section-title"><h2>🎯 Diagnóstico Inicial</h2></div>
+      <div class="box" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">🎯</div>
+        <h3 style="margin-bottom:8px;">¿Por dónde empezás?</h3>
+        <p style="color:#8896b8;font-size:.9rem;line-height:1.6;margin-bottom:18px;">
+          Respondé <strong style="color:#eef2ff;">10 preguntas rápidas</strong> de distintos temas.
+          En menos de 5 minutos sabés exactamente cuáles son tus áreas más débiles
+          y qué estudiar primero.
+        </p>
+        <button class="primary-btn" style="width:100%;" onclick="startDiagnostic()">🚀 Iniciar diagnóstico</button>
+      </div>`;
+  }
+
+  if (state.diagFinished) {
+    const correct = state.diagResults.filter(r => r.correct).length;
+    const pct     = Math.round(correct / state.diagQueue.length * 100);
+    const color   = pct >= 75 ? "var(--green)" : pct >= 50 ? "var(--yellow)" : "var(--red)";
+
+    // Group results by topic
+    const byTopic = {};
+    state.diagResults.forEach(r => {
+      if (!byTopic[r.topic]) byTopic[r.topic] = { correct:0, total:0 };
+      byTopic[r.topic].total++;
+      if (r.correct) byTopic[r.topic].correct++;
+    });
+
+    const topicRows = Object.entries(byTopic).map(([k, v]) => {
+      const m   = topicMeta[k] || {};
+      const ok  = v.correct === v.total;
+      const col = ok ? "var(--green)" : "var(--red)";
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.04);
+                    border:1px solid rgba(255,255,255,.08);">
+          <span>${m.icon||"📚"} ${m.label||k}</span>
+          <span style="color:${col};font-weight:700;">${v.correct}/${v.total}</span>
+        </div>`;
+    }).join("");
+
+    const weakTopics = Object.entries(byTopic)
+      .filter(([,v]) => v.correct < v.total)
+      .map(([k]) => k);
+
+    return `
+      <div class="section-title"><h2>🎯 Resultado del Diagnóstico</h2></div>
+      <div class="box">
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="font-size:2.5rem;font-weight:700;color:${color};">${pct}%</div>
+          <div style="color:#8896b8;">${correct} de ${state.diagQueue.length} correctas</div>
+        </div>
+        <div style="font-weight:700;margin-bottom:10px;font-size:.9rem;">Por tema:</div>
+        <div style="display:grid;gap:7px;margin-bottom:16px;">${topicRows}</div>
+        ${weakTopics.length ? `
+          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);
+                      border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.88rem;line-height:1.6;">
+            ⚠️ <strong>Temas a reforzar:</strong>
+            ${weakTopics.map(k => `<button class="secondary-btn" style="font-size:.8rem;padding:5px 10px;margin:4px 3px;" onclick="doShowStudyTopic('${k}')">
+              ${topicMeta[k]?.icon} ${topicMeta[k]?.label}
+            </button>`).join("")}
+          </div>` : `
+          <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);
+                      border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.88rem;">
+            ✅ <strong>¡Excelente base!</strong> Reforzá con el simulacro para confirmarlo.
+          </div>`}
+        <div class="action-row">
+          <button class="primary-btn" onclick="startDiagnostic()">🔄 Repetir diagnóstico</button>
+          <button class="secondary-btn" onclick="setView('study')">📖 Ir a Estudiar</button>
+        </div>
+      </div>`;
+  }
+
+  // Pregunta actual
+  const q    = state.diagQueue[state.diagIndex];
+  const meta = topicMeta[q._topic] || {};
+  const optHtml = q.options.map((opt, i) => {
+    let cls = "option-btn";
+    if (state.diagAnswered) {
+      if (i === q.answer) cls += " correct";
+      else if (i === state.diagSelected) cls += " wrong";
+    }
+    return `<button class="${cls}" ${state.diagAnswered?"disabled":""} onclick="doAnswerDiag(${i})">${String.fromCharCode(65+i)}. ${opt}</button>`;
+  }).join("");
+  const feedHtml = state.diagAnswered ? `
+    <div class="feedback ${state.diagSelected===q.answer?"good":"bad"}">
+      <strong>${state.diagSelected===q.answer?"✅ Correcto":"❌ Incorrecto"}</strong><br><br>${q.explanation}
+    </div>` : "";
+
+  return `
+    <div class="section-title">
+      <h2>🎯 Diagnóstico</h2>
+      <span class="badge">${state.diagIndex+1} / ${state.diagQueue.length}</span>
+    </div>
+    <div class="box">
+      <div style="font-size:.8rem;color:#8896b8;font-weight:700;margin-bottom:8px;">
+        ${meta.icon||"📚"} ${meta.label||q._topic}
+      </div>
+      <div class="question">${q.question}</div>
+      <div class="options">${optHtml}</div>
+      ${feedHtml}
+      ${state.diagAnswered
+        ? `<button class="primary-btn" style="margin-top:12px;width:100%;" onclick="doNextDiag()">
+            ${state.diagIndex < state.diagQueue.length-1 ? "Siguiente →" : "Ver resultado"}
+           </button>`
+        : ""}
+    </div>`;
+}
+
+window.startDiagnostic = function() {
+  // 1 pregunta de cada tema (hasta 10)
+  const pool = [];
+  Object.entries(questionsByTopic).forEach(([topic, qs]) => {
+    const q = qs[Math.floor(Math.random() * qs.length)];
+    pool.push({ ...q, _topic: topic });
+  });
+  state.diagQueue    = shuffle(pool).slice(0, 10);
+  state.diagIndex    = 0;
+  state.diagAnswered = false;
+  state.diagSelected = null;
+  state.diagFinished = false;
+  state.diagResults  = [];
+  render();
+};
+window.doAnswerDiag = function(idx) {
+  if (state.diagAnswered) return;
+  state.diagAnswered = true;
+  state.diagSelected = idx;
+  state.diagResults.push({
+    topic: state.diagQueue[state.diagIndex]._topic,
+    correct: idx === state.diagQueue[state.diagIndex].answer
+  });
+  render();
+};
+window.doNextDiag = function() {
+  if (state.diagIndex < state.diagQueue.length - 1) {
+    state.diagIndex++;
+    state.diagAnswered = false;
+    state.diagSelected = null;
+  } else {
+    state.diagFinished = true;
+  }
+  render();
+};
+
+/* ================================================================
+   🖨️ HOJA IMPRIMIBLE
+================================================================ */
+window.printSummary = function() {
+  const printWin = window.open("", "_blank");
+  const topics = Object.entries(studyContent).map(([key, t]) => {
+    const m = topicMeta[key];
+    return `
+      <div style="margin-bottom:24px;page-break-inside:avoid;">
+        <h2 style="font-size:14pt;border-bottom:2px solid #f97316;padding-bottom:4px;margin-bottom:8px;">
+          ${m.icon} ${t.title}
+        </h2>
+        <ul style="margin:0 0 8px;padding-left:18px;line-height:1.8;">
+          ${t.summary.map(s => `<li>${s}</li>`).join("")}
+        </ul>
+        <div style="background:#fff8f0;border-left:4px solid #f97316;padding:8px 12px;font-size:10pt;line-height:1.6;">
+          ${t.highlight}
+        </div>
+      </div>`;
+  }).join("");
+
+  printWin.document.write(`<!DOCTYPE html><html><head>
+    <title>Resumen Licencia COSEVI · Costa Rica</title>
+    <meta charset="UTF-8">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 11pt; color: #111; margin: 20mm; line-height:1.5; }
+      h1   { font-size: 18pt; text-align: center; color: #f97316; border-bottom: 3px solid #f97316; padding-bottom:8px; margin-bottom:24px; }
+      @media print { body { margin: 15mm; } }
+    </style>
+  </head><body>
+    <h1>📋 Resumen Completo — Examen de Licencia COSEVI</h1>
+    <p style="text-align:center;color:#666;margin-bottom:28px;font-size:10pt;">
+      Repaso de todos los temas · Uso exclusivo de estudio
+    </p>
+    ${topics}
+  </body></html>`);
+  printWin.document.close();
+  setTimeout(() => printWin.print(), 500);
+};
+
 /* ================================================================
    COMPATIBILIDAD CON LLAMADAS GLOBALES DEL HTML ORIGINAL
 ================================================================ */
@@ -2921,6 +3451,24 @@ window.startMock   = window.startMock;
 ================================================================ */
 buildIndex();
 render();
+
+// ── Recordatorio de estudio ──────────────────────────────────────
+(function checkStudyReminder() {
+  const last    = localStorage.getItem("sbm_last_visit");
+  const now     = Date.now();
+  const remEl   = document.getElementById("studyReminder");
+  if (!remEl) return;
+  if (last) {
+    const days = Math.floor((now - parseInt(last)) / 86400000);
+    if (days >= 1) {
+      remEl.style.display = "block";
+      remEl.innerHTML = days === 1
+        ? "⏰ <strong>Ayer no practicaste.</strong> Un repaso rápido hoy mantiene lo aprendido fresco."
+        : `⏰ <strong>Llevás ${days} días sin practicar.</strong> ¡El examen no espera — repasá hoy!`;
+    }
+  }
+  localStorage.setItem("sbm_last_visit", now.toString());
+})();
 </script>
 </body>
 </html>
