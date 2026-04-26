@@ -446,9 +446,117 @@
       .stats { grid-template-columns: 1fr 1fr; }
       .row-3 { grid-template-columns: 1fr; }
     }
-  </style>
+  
+/* ══ LOGIN SCREEN ══ */
+.login-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:#060912;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:28px 24px;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% 0%,rgba(56,189,248,.07),transparent 60%),
+    radial-gradient(circle at 85% 80%,rgba(34,197,94,.05),transparent 50%);
+}
+.login-overlay.hidden{display:none}
+.login-box{
+  width:100%;max-width:380px;
+  background:#0a0f1e;border:1px solid rgba(255,255,255,.07);
+  border-radius:24px;padding:32px 28px;
+  box-shadow:0 0 60px rgba(56,189,248,.07);
+  position:relative;overflow:hidden;
+}
+.login-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,#38bdf8,transparent);
+}
+.login-flag{font-size:2.5rem;text-align:center;display:block;margin-bottom:10px}
+.login-logo{
+  font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;
+  color:#38bdf8;text-align:center;margin-bottom:4px;
+}
+.login-tagline{font-size:.78rem;color:#8896b8;text-align:center;margin-bottom:26px}
+.login-label{font-size:.75rem;font-weight:700;color:#8896b8;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:7px}
+.login-input{
+  width:100%;background:#0f1628;border:1px solid rgba(255,255,255,.07);
+  color:#eef2ff;border-radius:12px;
+  padding:12px 16px;font-size:1rem;font-family:inherit;
+  outline:none;transition:.2s;letter-spacing:.1em;
+  text-align:center;font-weight:700;
+  autocapitalize:none;
+}
+.login-input:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+.login-btn{
+  width:100%;margin-top:12px;
+  background:linear-gradient(135deg,#0ea5e9,#38bdf8);
+  color:#03111f;font-weight:800;font-size:.95rem;
+  padding:13px;border-radius:12px;border:none;cursor:pointer;
+  transition:.2s;font-family:inherit;
+  box-shadow:0 6px 20px rgba(56,189,248,.25);
+}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(56,189,248,.35)}
+.login-error{
+  display:none;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);
+  border-radius:10px;padding:10px 14px;
+  font-size:.8rem;color:#ef4444;text-align:center;margin-top:10px;
+}
+.login-error.show{display:block}
+.login-divider{display:flex;align-items:center;gap:10px;margin:18px 0 14px}
+.login-divider span{height:1px;flex:1;background:rgba(255,255,255,.07)}
+.login-divider p{font-size:.72rem;color:#8896b8;white-space:nowrap}
+.login-access-btn{
+  width:100%;background:#0f1628;border:1px solid rgba(255,255,255,.07);
+  color:#8896b8;font-size:.82rem;font-weight:600;
+  padding:11px;border-radius:12px;cursor:pointer;
+  transition:.2s;font-family:inherit;text-align:center;
+  text-decoration:none;display:block;
+}
+.login-access-btn:hover{border-color:#38bdf8;color:#38bdf8}
+.login-footer{font-size:.68rem;color:#475569;text-align:center;margin-top:16px}
+
+</style>
 </head>
 <body>
+<!-- LOGIN SCREEN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <span class="login-flag">🇨🇷</span>
+    <div class="login-logo">Simulador Licencia CR</div>
+    <div class="login-tagline">Aprobá el COSEVI a la primera</div>
+
+    <span class="login-label">Tu código de acceso</span>
+    <input
+      class="login-input"
+      type="password"
+      id="loginInput"
+      placeholder="••••••••••••"
+      autocapitalize="none"
+      autocorrect="off"
+      autocomplete="off"
+      spellcheck="false"
+      onkeydown="if(event.key==='Enter')checkAccess()"
+    >
+    <div class="login-error" id="loginError">
+      ❌ Código incorrecto. Verificá y volvé a intentar.
+    </div>
+    <button class="login-btn" onclick="checkAccess()">
+      Ingresar al Simulador →
+    </button>
+
+    <div class="login-divider">
+      <span></span><p>¿No tenés código?</p><span></span>
+    </div>
+    <a href="https://pay.hotmart.com/D105556941J" class="login-access-btn" target="_blank">
+      🚗 Obtené tu acceso completo →
+    </a>
+
+    <div class="login-footer">
+      © 2026 Simulador Licencia CR · Todos los derechos reservados
+    </div>
+  </div>
+</div>
+
 <!-- ====== PANTALLA DE LOGIN ====== -->
 <div id="loginScreen" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#0b1020;color:white;position:relative;">
   <span id="adminTrigger" onclick="countAdminClick()" style="font-size:3rem;cursor:default;user-select:none;">🔐</span>
@@ -4099,6 +4207,48 @@ render();
   }
   localStorage.setItem("sbm_last_visit", now.toString());
 })();
+
+// ══════════════════════════════════════
+// ACCESS CONTROL · Simulador Licencia CR
+// ══════════════════════════════════════
+
+const ACTIVATION_CODE = "LICENCIA2026";
+
+function getWeeklyCode() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+  const yr = String(now.getFullYear()).slice(-2);
+  return 'COSEVI' + String(week).padStart(2,'0') + yr;
+}
+
+function checkAccess() {
+  const input = document.getElementById('loginInput').value.trim().toUpperCase();
+  const error = document.getElementById('loginError');
+  if (
+    input === ACTIVATION_CODE.toUpperCase() ||
+    input === getWeeklyCode().toUpperCase()
+  ) {
+    try { localStorage.setItem('sim_lic_access', 'granted'); } catch(e){}
+    document.getElementById('loginOverlay').classList.add('hidden');
+    error.classList.remove('show');
+  } else {
+    error.classList.add('show');
+    document.getElementById('loginInput').value = '';
+    document.getElementById('loginInput').focus();
+  }
+}
+
+function checkStoredAccess() {
+  try {
+    if (localStorage.getItem('sim_lic_access') === 'granted') {
+      document.getElementById('loginOverlay').classList.add('hidden');
+    }
+  } catch(e) {}
+}
+
+checkStoredAccess();
+
 </script>
 </body>
 </html>
