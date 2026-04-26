@@ -557,22 +557,10 @@
   </div>
 </div>
 
-<!-- ====== PANTALLA DE LOGIN ====== -->
-<div id="loginScreen" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#0b1020;color:white;position:relative;">
-  <span id="adminTrigger" onclick="countAdminClick()" style="font-size:3rem;cursor:default;user-select:none;">🔐</span>
-  <h2 style="margin:10px 0 4px;font-size:1.4rem;">Acceso al Simulador</h2>
-  <p style="color:#8896b8;font-size:.82rem;margin-bottom:18px;">Práctica de licencia · Costa Rica</p>
-  <input type="password" id="password" placeholder="Ingresa tu código de acceso" onkeydown="if(event.key==='Enter')checkLogin()"
-    autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false"
-    style="padding:11px 14px;margin:6px;border-radius:10px;border:none;width:260px;font-size:.97rem;outline:none;">
-  <button onclick="checkLogin()"
-    style="padding:11px 28px;border:none;border-radius:10px;background:#f97316;color:white;font-size:.97rem;font-weight:600;cursor:pointer;margin-top:4px;">
-    Entrar →
-  </button>
-  <p id="loginError" style="color:#ef4444;display:none;margin-top:10px;font-size:.88rem;">Código incorrecto. Intenta de nuevo.</p>
-</div>
+<!-- Login screen removed - handled by new login overlay -->
+<div id="loginScreen" style="display:none;"></div>
 
-<!-- ====== PANEL ADMIN (solo visible para ti) ====== -->
+<!-- ====== PANEL ADMIN<!-- ====== PANEL ADMIN (solo visible para ti) ====== -->
 <div id="adminPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;justify-content:center;align-items:center;">
   <div style="background:#0f1628;border:1px solid rgba(249,115,22,.4);border-radius:20px;padding:28px 32px;width:340px;color:white;box-shadow:0 20px 50px rgba(0,0,0,.5);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -816,6 +804,9 @@ function isAdminDevice() {
 })();
 
 function checkLogin() {
+  // Login handled by new overlay system
+  document.getElementById("loginScreen").style.display = "none";
+  return;
   const pass = document.getElementById("password").value.trim();
   const err  = document.getElementById("loginError");
   if (pass.toUpperCase().trim() === getPass().toUpperCase().trim()) {
@@ -4248,6 +4239,15 @@ function checkStoredAccess() {
 }
 
 checkStoredAccess();
+// Also bypass internal login screen
+try {
+  if (localStorage.getItem("sim_lic_access") === "granted") {
+    const ls = document.getElementById("loginScreen");
+    if (ls) ls.style.display = "none";
+    // Auto-pass internal login
+    localStorage.setItem("sbm_lic_pass", "auto");
+  }
+} catch(e) {}
 
 </script>
 </body>
