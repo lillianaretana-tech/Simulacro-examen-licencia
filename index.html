@@ -455,6 +455,7 @@
   <h2 style="margin:10px 0 4px;font-size:1.4rem;">Acceso al Simulador</h2>
   <p style="color:#8896b8;font-size:.82rem;margin-bottom:18px;">Práctica de licencia · Costa Rica</p>
   <input type="password" id="password" placeholder="Ingresa tu código de acceso" onkeydown="if(event.key==='Enter')checkLogin()"
+    autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false"
     style="padding:11px 14px;margin:6px;border-radius:10px;border:none;width:260px;font-size:.97rem;outline:none;">
   <button onclick="checkLogin()"
     style="padding:11px 28px;border:none;border-radius:10px;background:#f97316;color:white;font-size:.97rem;font-weight:600;cursor:pointer;margin-top:4px;">
@@ -484,7 +485,27 @@
       style="width:100%;padding:11px;background:#f97316;color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;">
       Guardar nuevo código
     </button>
-    <p style="font-size:.75rem;color:#4a5578;margin-top:14px;text-align:center;">Este panel no es visible para otros usuarios.</p>
+    <!-- Separador -->
+    <div style="border-top:1px solid rgba(255,255,255,.08);margin:18px 0 16px;"></div>
+
+    <!-- Acceso directo para este dispositivo -->
+    <div style="font-size:.82rem;color:#8896b8;margin-bottom:10px;font-weight:600;">
+      📱 Acceso sin contraseña (solo este dispositivo)
+    </div>
+    <p style="font-size:.78rem;color:#4a5578;line-height:1.5;margin-bottom:10px;">
+      Activá esto en tu dispositivo personal para entrar directo sin clave.
+      Los estudiantes en sus dispositivos seguirán viendo la pantalla de acceso.
+    </p>
+    <button id="adminDeviceBtn" onclick="toggleAdminDevice()"
+      style="width:100%;padding:10px;border-radius:10px;font-family:inherit;
+             font-size:.85rem;font-weight:700;cursor:pointer;
+             background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.4);
+             color:#86efac;margin-bottom:8px;">
+      🚀 Activar acceso directo en este dispositivo
+    </button>
+    <p id="adminDeviceMsg" style="font-size:.82rem;margin:0 0 6px;display:none;"></p>
+
+    <p style="font-size:.72rem;color:#4a5578;margin-top:14px;text-align:center;">Este panel no es visible para otros usuarios.</p>
   </div>
 </div>
 <div class="container">
@@ -595,6 +616,41 @@
           ⚡ Modo Intensivo
           <small>15 min · solo lo que cae en el examen</small>
         </button>
+        <div style="font-size:.7rem;color:#8896b8;padding:6px 4px 2px;letter-spacing:.06em;font-weight:700;">
+          📘 MANUAL OFICIAL
+        </div>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('trilogia')},50)" style="background:rgba(249,115,22,.06);">
+          🔺 Trilogía Vial
+          <small>Sistema seguro y objetivos de la seguridad vial</small>
+        </button>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('conductores')},50)" style="background:rgba(167,139,250,.06);">
+          👤 Tipos de Conductor
+          <small>Novato, profesional, licencias B-1 a B-4</small>
+        </button>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('puntosdet')},50)" style="background:rgba(239,68,68,.06);">
+          📉 Sistema de Puntos
+          <small>Suspensiones, puntos por infracción</small>
+        </button>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('dam')},50)" style="background:rgba(56,189,248,.06);">
+          📋 DAM, DEV y Documentos
+          <small>Accidente menor, dirección electrónica, VIN</small>
+        </button>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('frenos')},50)" style="background:rgba(244,63,94,.06);">
+          🛑 Los Frenos
+          <small>ABS, distancias de frenado, técnica</small>
+        </button>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('mandos')},50)" style="background:rgba(132,204,22,.06);">
+          🎛️ Mandos del Vehículo
+          <small>Postura, controles, tablero</small>
+        </button>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('proteccion')},50)" style="background:rgba(192,132,252,.06);">
+          🛡️ Protección Pasiva
+          <small>Airbag, zonas deformación, SRI</small>
+        </button>
+        <button class="nav-btn" data-view="study" onclick="setTimeout(()=>{doShowStudyTopic('riesgos')},50)" style="background:rgba(251,146,60,.06);">
+          ⚠️ Factores de Riesgo
+          <small>4 grupos OMS, trilogía vial</small>
+        </button>
       </div><!-- /menuButtons -->
 
       <!-- Info del examen real -->
@@ -635,12 +691,26 @@
 ================================================================ */
 /* ---- CONTROL DE ACCESO CON CLAVE DINÁMICA ---- */
 const DEFAULT_PASS = "LICENCIA2026";
-function getPass() { return localStorage.getItem("sbm_lic_pass") || DEFAULT_PASS; }
+function getPass() {
+  try { return localStorage.getItem("sbm_lic_pass") || DEFAULT_PASS; }
+  catch(e) { return DEFAULT_PASS; }
+}
+function isAdminDevice() {
+  try { return localStorage.getItem("sbm_admin_device") === "1"; }
+  catch(e) { return false; }
+}
+
+// Auto-bypass login si este dispositivo está marcado como admin
+(function autoBypass() {
+  if (isAdminDevice()) {
+    document.getElementById("loginScreen").style.display = "none";
+  }
+})();
 
 function checkLogin() {
-  const pass = document.getElementById("password").value;
+  const pass = document.getElementById("password").value.trim();
   const err  = document.getElementById("loginError");
-  if (pass === getPass()) {
+  if (pass.toUpperCase().trim() === getPass().toUpperCase().trim()) {
     document.getElementById("loginScreen").style.display = "none";
     err.style.display = "none";
   } else {
@@ -664,6 +734,7 @@ function countAdminClick() {
     document.getElementById("adminConfirm").value = "";
     document.getElementById("adminMsg").style.display = "none";
     document.getElementById("adminCurrent").focus();
+    updateAdminDeviceBtn();
   }
 }
 function closeAdmin() { document.getElementById("adminPanel").style.display = "none"; }
@@ -688,6 +759,48 @@ function saveNewPassword() {
   msg.style.display = "block"; msg.style.color = "#22c55e";
   msg.textContent = "✅ Código actualizado correctamente.";
   setTimeout(closeAdmin, 1800);
+}
+
+window.toggleAdminDevice = function() {
+  const isAdmin = isAdminDevice();
+  const msg = document.getElementById("adminDeviceMsg");
+  if (isAdmin) {
+    localStorage.removeItem("sbm_admin_device");
+    msg.textContent = "🔒 Este dispositivo ahora pedirá contraseña.";
+    msg.style.color = "#facc15";
+    document.getElementById("adminDeviceBtn").textContent = "🚀 Activar acceso directo en este dispositivo";
+    document.getElementById("adminDeviceBtn").style.background = "rgba(34,197,94,.15)";
+    document.getElementById("adminDeviceBtn").style.borderColor = "rgba(34,197,94,.4)";
+    document.getElementById("adminDeviceBtn").style.color = "#86efac";
+  } else {
+    localStorage.setItem("sbm_admin_device", "1");
+    msg.textContent = "✅ ¡Listo! Este dispositivo ya no pedirá contraseña.";
+    msg.style.color = "#22c55e";
+    document.getElementById("adminDeviceBtn").textContent = "🔒 Desactivar acceso directo en este dispositivo";
+    document.getElementById("adminDeviceBtn").style.background = "rgba(239,68,68,.1)";
+    document.getElementById("adminDeviceBtn").style.borderColor = "rgba(239,68,68,.4)";
+    document.getElementById("adminDeviceBtn").style.color = "#fca5a5";
+  }
+  msg.style.display = "block";
+};
+
+function updateAdminDeviceBtn() {
+  const btn = document.getElementById("adminDeviceBtn");
+  const msg = document.getElementById("adminDeviceMsg");
+  if (!btn) return;
+  if (isAdminDevice()) {
+    btn.textContent = "🔒 Desactivar acceso directo en este dispositivo";
+    btn.style.background = "rgba(239,68,68,.1)";
+    btn.style.borderColor = "rgba(239,68,68,.4)";
+    btn.style.color = "#fca5a5";
+    if (msg) { msg.textContent = "✅ Este dispositivo entra sin contraseña."; msg.style.color = "#22c55e"; msg.style.display = "block"; }
+  } else {
+    btn.textContent = "🚀 Activar acceso directo en este dispositivo";
+    btn.style.background = "rgba(34,197,94,.1)";
+    btn.style.borderColor = "rgba(34,197,94,.4)";
+    btn.style.color = "#86efac";
+    if (msg) { msg.style.display = "none"; }
+  }
 }
 /* ================================================================
    CONTENIDO DE ESTUDIO POR TEMA
@@ -1107,7 +1220,8 @@ const questionsByTopic = {
     { question:"Exceder el límite de velocidad en más del 50% implica:", options:["Solo una multa baja","Multa, posible retención del vehículo y suspensión de licencia","Ninguna sanción si no hay accidente"], answer:1, explanation:"Exceder el límite en más del 50% es una infracción gravísima que puede derivar en retención y suspensión según la Ley 9078." },
     { question:"En un puente angosto sin señal especial, ¿qué debe hacer con la velocidad?", options:["Acelerar para cruzarlo rápido","Reducir la velocidad y aumentar la precaución","Mantener la misma velocidad"], answer:1, explanation:"Los puentes angostos representan un riesgo por el espacio reducido; se debe reducir la velocidad y verificar que no venga un vehículo de frente." },
     { question:"¿A qué velocidad máxima está permitido circular de noche en una carretera interurbana sin iluminación?", options:["80 km/h","60 km/h (el límite normal aplica pero con mayor precaución)","40 km/h"], answer:1, explanation:"El límite legal es el mismo, pero de noche sin iluminación se debe ajustar la velocidad a la distancia que permiten las luces. La prudencia es clave." },
-    { question:"Si el velocímetro marca más que la señal de velocidad máxima, usted está:", options:["Dentro del margen técnico permitido","Cometiendo una infracción","Bien si el tráfico va igual de rápido"], answer:1, explanation:"La velocidad marcada en la señal es el límite máximo; superarlo es una infracción, independientemente del flujo del tráfico." }
+    { question:"Si el velocímetro marca más que la señal de velocidad máxima, usted está:", options:["Dentro del margen técnico permitido","Cometiendo una infracción","Bien si el tráfico va igual de rápido"], answer:1, explanation:"La velocidad marcada en la señal es el límite máximo; superarlo es una infracción, independientemente del flujo del tráfico." },
+    { question:"El límite de 25 km/h aplica en zonas con:", options:["Carreteras nacionales","Vías sin demarcación","Autopistas rurales","Planteles educativos, centros de salud o actividades masivas"], answer:3, explanation:"La velocidad de 25 km/h aplica en zonas escolares, centros de salud y donde se realizan actividades masivas, para proteger a peatones vulnerables como niños y adultos mayores." }
   ],
 
   /* ─── PRIORIDAD DE PASO ──────────────────────────────────── */
@@ -1144,7 +1258,8 @@ const questionsByTopic = {
     { question:"¿De qué color son las luces de reversa?", options:["Rojas","Ámbar","Blancas"], answer:2, explanation:"Las luces de reversa son blancas y se activan automáticamente al colocar la marcha atrás para indicar la intención de retroceder." },
     { question:"Dentro de un túnel, aunque haya iluminación artificial, ¿debe encender las luces?", options:["No, si el túnel está iluminado no es necesario","Sí, siempre se deben usar luces dentro de túneles","Solo si el túnel mide más de 500 metros"], answer:1, explanation:"Es obligatorio encender las luces al ingresar a cualquier túnel, independientemente de su iluminación, para ser visible a otros." },
     { question:"¿Con qué anticipación debe activar los indicadores de giro antes de doblar?", options:["Justo al momento de doblar","Con suficiente anticipación para avisar a los otros conductores (generalmente al menos 30 metros antes)","Solo si hay otros vehículos detrás"], answer:1, explanation:"Los indicadores deben activarse con antelación para que los demás conductores puedan anticipar la maniobra y reaccionar." },
-    { question:"Conducir de noche en una ciudad sin encender las luces del vehículo es:", options:["Aceptable si hay iluminación pública suficiente","Una infracción grave; las luces son obligatorias independientemente de la iluminación de la calle","Solo recomendable encenderlas en calles oscuras"], answer:1, explanation:"Las luces del vehículo son obligatorias de noche sin excepción; no depende de si hay alumbrado público." }
+    { question:"Conducir de noche en una ciudad sin encender las luces del vehículo es:", options:["Aceptable si hay iluminación pública suficiente","Una infracción grave; las luces son obligatorias independientemente de la iluminación de la calle","Solo recomendable encenderlas en calles oscuras"], answer:1, explanation:"Las luces del vehículo son obligatorias de noche sin excepción; no depende de si hay alumbrado público." },
+    { question:"Si se detiene de noche en la vía, ¿qué debe hacer con las luces?", options:["Encender las luces altas para ser más visible","Apagar todas las luces","Usar solo los intermitentes de emergencia","Mantener encendidas las luces bajas"], answer:3, explanation:"Al detenerse de noche, las luces bajas deben permanecer encendidas para que otros conductores puedan ver el vehículo. Apagar todas las luces sería peligroso; las altas pueden encandilar." }
   ],
 
   /* ─── DISTANCIAS Y SEGURIDAD ─────────────────────────────── */
@@ -1399,8 +1514,36 @@ const questionsByTopic = {
     { question:"¿Puede un conductor girar a la derecha cuando el semáforo está en rojo, si no hay señal que lo prohíba?", options:["Sí, siempre está permitido en Costa Rica girar a la derecha en rojo","No necesariamente; en Costa Rica el giro a la derecha en rojo está permitido solo cuando una señal específica lo autoriza. Sin esa señal, el rojo prohíbe todo movimiento","Solo si no hay peatones cruzando"], answer:1, explanation:"A diferencia de EE.UU., en Costa Rica el giro a la derecha en rojo NO está permitido por defecto; requiere una señal específica que lo autorice. El rojo prohíbe todo avance." },
     { question:"¿Qué diferencia hay entre una flecha roja y una luz circular roja en un semáforo?", options:["Son exactamente lo mismo; ambas prohíben el paso en todas las direcciones","La flecha roja prohíbe específicamente el movimiento en la dirección que señala; la luz circular roja prohíbe todos los movimientos","La flecha roja solo aplica a vehículos pesados"], answer:1, explanation:"La flecha roja restringe un movimiento específico (ej: no girar a la izquierda) aunque el resto de movimientos puedan estar habilitados. La luz circular roja prohíbe toda circulación." },
     { question:"Si el contador regresivo del semáforo verde muestra '3' segundos mientras usted se aproxima, ¿qué debe hacer?", options:["Acelerar para cruzar antes de que cambie a rojo","Prepararse para detenerse; en 3 segundos el semáforo cambiará a ámbar y luego a rojo","Ignorarlo porque los contadores no son señales oficiales"], answer:1, explanation:"Un contador bajo indica que el cambio de fase es inminente; prepararse para detenerse es la conducta prudente y segura, evitando cruzar en rojo por error de cálculo." }
-  ]
+  ],
+
+  /* ── PREGUNTAS NUEVAS DE PRACTICATEST.CR ── */
+  // (agregadas via push después de la declaración)
+
 };
+
+// Agregar preguntas nuevas a los temas existentes (push seguro)
+(function addNewQuestions() {
+  const nq = [
+    { t:"maniobras", q:{ question:"Después de adelantar, ¿qué debe hacer para volver al carril derecho?", options:["Frenar suavemente","Indicar la intención usando el direccional derecho","Apagar las luces para no encandilar a otros conductores","Girar sin señalizar y rápidamente"], answer:1, explanation:"Al regresar al carril derecho luego de adelantar, siempre debe indicar la maniobra con el direccional derecho. Jamás haga este movimiento sin señalizar." } },
+    { t:"maniobras", q:{ question:"¿Por qué las líneas discontinuas permiten adelantamiento solo bajo ciertas condiciones?", options:["Porque siempre es seguro adelantar","Porque es obligatorio adelantar","Porque el tránsito es lento","Porque requieren evaluar visibilidad, distancia y seguridad antes de maniobrar"], answer:3, explanation:"La línea discontinua no garantiza que sea seguro adelantar. El conductor debe verificar visibilidad, ausencia de tráfico contrario y espacio suficiente para completar la maniobra." } },
+    { t:"defensiva", q:{ question:"¿Qué finalidad tiene observar otros carriles según la conducción perceptiva?", options:["Determinar cuál carril ofrece menor consumo","Anticipar maniobras de otros conductores en el mismo sentido, sentido contrario o desde intersecciones","Identificar el mejor carril para adelantar sin señalizar","Vigilar solo los vehículos de atrás"], answer:1, explanation:"La conducción perceptiva consiste en observar el entorno continuamente para anticipar riesgos. Observar carriles adyacentes permite reaccionar antes de que se produzca una maniobra peligrosa." } },
+    { t:"defensiva", q:{ question:"¿Qué beneficio adicional aporta conducir con cortesía?", options:["Evita por sí solo cualquier sanción","Mejora el estado de ánimo, reduce el estrés y crea un ambiente más seguro para todos","Elimina completamente el riesgo de accidente","Permite llegar siempre más rápido al destino"], answer:1, explanation:"La cortesía al volante reduce la tensión propia, disminuye conflictos viales y contribuye a un ambiente de conducción más seguro para todos los usuarios de la vía." } },
+    { t:"defensiva", q:{ question:"¿Qué excepción existe sobre los vehículos autorizados respecto a las normas de tránsito?", options:["Se exceptúan si van con luces altas","Se exceptúan cuando actúan en sus funciones y se identifican con señales visibles o sonoras","Se exceptúan si llevan pasajero enfermo sin señalización","Se exceptúan si estacionan menos de 1 minuto"], answer:1, explanation:"Los vehículos de emergencia (policía, ambulancias, bomberos) pueden no acatar ciertas normas cuando están en servicio activo y se identifican con sirenas o señales visuales." } },
+    { t:"vehiculos", q:{ question:"¿Qué requisito debe cumplirse al comprar un SRI (Sistema de Retención Infantil)?", options:["Que sea el más grande posible","Que sea de cuero","Que esté homologado y se verifiquen sus certificaciones","Que sea del mismo modelo del vehículo"], answer:2, explanation:"El SRI debe estar homologado y tener certificaciones vigentes. Un SRI sin homologar puede no proteger adecuadamente al niño en un accidente." } },
+    { t:"vehiculos", q:{ question:"¿Qué ocurre si se usa incorrectamente el cinturón de seguridad?", options:["Pierde la comodidad","No tiene consecuencias significativas","Pierde efectividad en un choque","Reduce lesiones igualmente"], answer:2, explanation:"El cinturón mal colocado (detrás del cuerpo o bajo el brazo) puede no retener al ocupante y hasta causar lesiones internas en colisión." } },
+    { t:"vehiculos", q:{ question:"¿Qué ventaja proporcionan los espejos laterales del vehículo?", options:["Solo sirven para estacionar","Mejoran el consumo de combustible","Permiten ver las zonas laterales y parte de la zona trasera","Indican la velocidad"], answer:2, explanation:"Los espejos laterales amplían el campo visual del conductor, reducen puntos ciegos y son esenciales para cambios de carril y adelantamientos seguros." } },
+    { t:"vehiculos", q:{ question:"¿Qué se afirma sobre la carrocería y el chasis en caso de choque?", options:["Solo el parabrisas absorbe el impacto","La carrocería disipa la energía del impacto y el chasis actúa como jaula protectora","El cinturón funciona mejor si el chasis es firme","La pintura evita la temperatura alta interna"], answer:1, explanation:"La carrocería se deforma para absorber energía mientras el habitáculo (chasis) permanece rígido, protegiendo a los ocupantes. Es el principio de seguridad pasiva estructural." } },
+    { t:"mecanica", q:{ question:"¿Qué causa la presión incorrecta de las llantas?", options:["Mayor rendimiento del vehículo","Más agarre en la vía","Más velocidad punta","Desgaste irregular y menor vida útil de las llantas"], answer:3, explanation:"La presión inadecuada provoca desgaste desigual, reduce la vida útil del neumático y puede aumentar el riesgo de reventón a altas velocidades." } },
+    { t:"mecanica", q:{ question:"¿Qué ventaja aporta el convertidor de par en una transmisión automática?", options:["Reduce la velocidad máxima","Permite transmitir la potencia del motor sin necesidad de embrague mecánico","Mejora el sistema de frenado","Sustituye al motor"], answer:1, explanation:"El convertidor de par es el equivalente hidráulico del embrague. Transmite la potencia a la caja automática sin contacto mecánico, permitiendo arranques suaves y progresivos." } },
+    { t:"mecanica", q:{ question:"¿Cuál es el objetivo principal del mantenimiento preventivo del vehículo?", options:["Reducir el consumo únicamente","Aumentar la potencia","Mejorar la velocidad máxima","Evitar fallas mecánicas que puedan causar accidentes"], answer:3, explanation:"El mantenimiento preventivo detecta y corrige problemas antes de que ocurran, garantizando la seguridad del vehículo." } },
+    { t:"mecanica", q:{ question:"¿Qué se recomienda observar bajo el vehículo durante la inspección previa al arranque?", options:["Solo el agua del limpiaparabrisas","Verificar que no haya manchas de líquidos en el suelo","Confirmar que el escape esté caliente","Revisar si hay polvo en el motor"], answer:1, explanation:"Las manchas de aceite, refrigerante o líquido de frenos indican fugas. Detectarlas antes de salir puede prevenir una falla mecánica grave." } },
+    { t:"conceptos", q:{ question:"¿Qué distingue al transporte público dentro de la clasificación de medios de transporte?", options:["Que transporta personas sin itinerario","Que solo lo operan conductores no tipificados","Que su uso es exclusivo para turismo","Que está destinado al traslado de pasajeros mediante el pago de una tarifa regulada"], answer:3, explanation:"El transporte público opera bajo regulación estatal con rutas autorizadas y tarifas establecidas, disponible para cualquier persona." } },
+    { t:"conceptos", q:{ question:"¿Qué característica distingue a los vehículos especiales?", options:["Diseñados para transporte masivo de turistas","Son todos los que circulan sobre rieles","Son de uso agrícola, industrial o de construcción (tractores, cosechadoras, retroexcavadoras)","Son de uso individual impulsados por pedales"], answer:2, explanation:"Los vehículos especiales son maquinaria agrícola, industrial y de construcción con normativas particulares para circular en vías públicas." } },
+    { t:"documentos", q:{ question:"¿Qué requisito distingue a la licencia tipo B-4 frente a la B-3?", options:["Tienen el mismo alcance, solo cambia el nombre","Además de autorizar vehículos pesados articulados, exige aprobar un curso especial","Se obtiene con menos requisitos de edad que la B-3","Sirve únicamente para vehículos no articulados de carga liviana"], answer:1, explanation:"La licencia B-4 habilita vehículos articulados de gran peso y requiere un curso de capacitación adicional, a diferencia de la B-3." } },
+    { t:"leyes", q:{ question:"¿Qué responsabilidad tiene el conductor respecto al vehículo que conduce?", options:["Solo responde si es conductor profesional","Responde únicamente si hay un accidente","Solo responde por daños materiales","Responde por todo lo que ocurra con el vehículo y ante cualquier infracción a la Ley de Tránsito"], answer:3, explanation:"El conductor es legalmente responsable de todo lo que ocurra durante la conducción: infracciones, accidentes y estado del vehículo. Esta responsabilidad aplica a todos los conductores." } }
+  ];
+  nq.forEach(item => { if (questionsByTopic[item.t]) questionsByTopic[item.t].push(item.q); });
+})();
 
 /* ================================================================
    CONTENIDO DE ESTUDIO — TEMAS NUEVOS
@@ -1556,6 +1699,129 @@ Object.assign(studyContent, {
   }
 });
 
+/* ── NUEVO CONTENIDO DE ESTUDIO — TEMAS DEL MANUAL OFICIAL ── */
+Object.assign(studyContent, {
+  trilogia: {
+    title: "Trilogía Vial y Seguridad Vial",
+    accent: "#f97316", icon: "🔺",
+    summary: [
+      "El tránsito es un sistema integrado por tres componentes: el ser humano, el vehículo y la vía y su entorno — esto se llama 'trilogía vial'.",
+      "El factor más importante es el ser humano (conductor), ya que el movimiento de los vehículos depende fundamentalmente de él.",
+      "Cualquier falla en alguno de los tres elementos repercute en la circulación y atenta contra la seguridad vial.",
+      "La seguridad vial estudia y aplica acciones para garantizar el buen funcionamiento de la circulación y prevenir accidentes.",
+      "Los 8 objetivos de la Seguridad Vial incluyen: disminuir daños, dar fluidez al tránsito, reducir contaminación, proteger infraestructura, conservar vehículos, reducir consumo energético, educar al ciudadano y capacitar funcionarios.",
+      "El enfoque de 'Sistema Seguro' reconoce que el ser humano comete errores y propone adecuar vías y velocidades para que esos errores no sean fatales.",
+      "Tránsito es la acción de desplazarse; transporte es trasladar personas o bienes. El tránsito es más amplio porque comprende el transporte y la circulación.",
+      "El primer vehículo circuló en San José en 1912. El primer Código de Circulación se publicó en 1920. La ley vigente es la Ley 9078 del 26 de octubre de 2012."
+    ],
+    highlight: "🔺 Trilogía vial: <strong>ser humano + vehículo + vía</strong>. El factor humano es el más importante. El 'Sistema Seguro' busca que los errores humanos no sean fatales. Ley vigente: <strong>Ley 9078 (2012)</strong>."
+  },
+  conductores: {
+    title: "Tipos de Conductor",
+    accent: "#a78bfa", icon: "👤",
+    summary: [
+      "La ley define 4 tipos de conductores: Novato, Profesional, No Tipificado (Común) y No Acreditado.",
+      "Conductor Novato: quien obtiene su licencia por primera vez y no supera los 3 años de haberla obtenido. Aplica para licencias A, B1 y D en sus primeros 3 años.",
+      "Conductor Profesional: cuya actividad laboral principal es conducir vehículos de transporte de personas o mercancías. Licencias B-3, B-4, C, D o E. También quien tenga licencia A-2, A-3, B-1 o B-2 con el agregado 'P'.",
+      "Conductor No Tipificado (Común): quien renueva su licencia (más de 3 años) y no es profesional. Licencias A, B1 y B2.",
+      "Conductor No Acreditado: no está inscrito como conductor o no tiene la licencia adecuada para el vehículo que usa.",
+      "Tipos de licencia clase B: B-1 (hasta 4.000 kg), B-2 (hasta 8.000 kg, mínimo 20 años y 2 años de B), B-3 (cualquier peso excepto articulados, 22 años y 3 años de B), B-4 (cualquier peso incluyendo articulados, 22 años, 3 años de B y curso especial).",
+      "Permiso temporal de aprendizaje: vigencia de 3 meses. El aprendiz debe ir acompañado de una persona con licencia del mismo tipo o superior, vigente y obtenida con al menos 5 años de antelación.",
+      "Requisitos para licencia clase B: 18 años cumplidos, saber leer y escribir, aprobar curso teórico, aprobar examen práctico, dictamen médico oficial, sin infracciones tipo A en los últimos 12 meses."
+    ],
+    highlight: "👤 4 tipos: <strong>Novato</strong> (0-3 años), <strong>Profesional</strong> (B-3, B-4, C, D, E), <strong>No Tipificado</strong> (renovación, no profesional), <strong>No Acreditado</strong> (sin licencia apropiada). B-4 requiere curso especial y 22 años."
+  },
+  puntosdet: {
+    title: "Sistema de Puntos — Detalle Completo",
+    accent: "#ef4444", icon: "📉",
+    summary: [
+      "El sistema de puntos es el 'Sistema de Evaluación Permanente de Conductores'. Acumular puntos suspende la licencia.",
+      "El máximo de puntos según vigencia de la licencia: 6 años → máximo 12 puntos; 4 años → máximo 8 puntos; 3 años → máximo 6 puntos.",
+      "Primera suspensión (al llegar al máximo): 12 meses (1 año).",
+      "Segunda suspensión: 24 meses (2 años). Tercera suspensión en adelante: 36 meses (3 años).",
+      "Con 5 o más puntos acumulados (sin llegar al máximo), al renovar deberá realizar trabajo comunal o aprobar un curso de reeducación vial.",
+      "Infracciones y sus puntos: alcohol 0.50–0.74 g/L = 6 pts; luz roja = 3 pts; velocidad >50% del límite = 6 pts; celular en mano = 3 pts; adelantar en zona prohibida = 3 pts; no respetar Alto = 3 pts; no usar cinturón = 2 pts; sin IVE vigente = 2 pts.",
+      "Infracciones muy graves (alcohol ≥ 0.75 g/L, accidente mortal por imprudencia) pueden derivar en cargos penales y cancelación definitiva."
+    ],
+    highlight: "📉 Licencia 6 años = máx <strong>12 pts</strong>, 4 años = máx <strong>8 pts</strong>, 3 años = máx <strong>6 pts</strong>. 1ª suspensión: 1 año. 2ª: 2 años. 3ª+: 3 años. Alcohol 0.50+ = 6 pts. Luz roja = 3 pts."
+  },
+  dam: {
+    title: "DAM, DEV y Documentos Adicionales",
+    accent: "#38bdf8", icon: "📋",
+    summary: [
+      "DAM (Declaración de Accidente Menor): procedimiento simplificado para accidentes con solo daños materiales y sin personas heridas. Evita congestionamientos. El formulario se descarga del sitio web del INS.",
+      "Para accidentes con víctimas: llamar al 9-1-1 inmediatamente. Dar tipo de siniestro, dirección con puntos de referencia, número de heridos, edad aproximada y si están conscientes o atrapados.",
+      "DEV (Dirección Electrónica Vial): correo electrónico obligatorio que todo conductor debe registrar ante el COSEVI. Es el domicilio digital para recibir notificaciones de infracciones, apelaciones y comunicaciones oficiales.",
+      "Si la DEV no puede recibir el mensaje tras 3 intentos, COSEVI publica en La Gaceta y un diario nacional. Toda persona que saque o renueve licencia debe registrar y mantener actualizada su DEV.",
+      "VIN (Vehicle Identification Number): código de 17 caracteres que identifica únicamente cada vehículo. Incluye datos del fabricante, modelo, año y número de serie. Obligatorio para inscribir, comprar, vender y hacer inspecciones.",
+      "Placa verde: indica que el vehículo funciona con energía eléctrica.",
+      "La relación entre documentos: sin título de propiedad no se puede matricular; sin IVE no se renueva el marchamo; sin marchamo el vehículo no puede circular.",
+      "Inspección previa diaria recomendada (círculo de seguridad): llantas, luces, nivel de líquidos, silenciador y escobillas."
+    ],
+    highlight: "📋 <strong>DAM</strong> = accidente solo con daños materiales (descarga en INS). <strong>DEV</strong> = correo obligatorio para notificaciones COSEVI. <strong>VIN</strong> = 17 caracteres. Placa <strong>verde</strong> = vehículo eléctrico."
+  },
+  frenos: {
+    title: "Los Frenos y su Importancia",
+    accent: "#f43f5e", icon: "🛑",
+    summary: [
+      "Los frenos son el sistema de seguridad activa más importante del vehículo. Su función es reducir la velocidad o detener el vehículo de forma controlada.",
+      "La distancia de frenado a 100 km/h en pavimento seco es aproximadamente 40 metros. En pavimento mojado se duplica (≈80 metros).",
+      "La distancia total de parada = distancia de reacción + distancia de frenado. A velocidades mayores, la distancia aumenta de forma exponencial.",
+      "Frenos ABS (Sistema Antibloqueo de Frenos): evita que las ruedas se bloqueen al frenar bruscamente, permitiendo mantener el control de dirección. Ante una emergencia, presionar el pedal de freno con fuerza máxima y sostenida.",
+      "Con frenos ABS se sentirá una vibración o pulsación en el pedal — esto es normal y no se debe soltar el freno.",
+      "Sin ABS (frenos convencionales): en caso de emergencia, se puede bombear el pedal para evitar el bloqueo total en pavimento resbaladizo.",
+      "Frenos desgastados aumentan la distancia de frenado y pueden causar pérdida de control. La IVE verifica el estado de los frenos.",
+      "Nunca pise el freno y el acelerador simultáneamente. En bajadas largas, use el freno motor (bajar de marcha) para no sobrecalentar los frenos."
+    ],
+    highlight: "🛑 Distancia de frenado a 100 km/h: <strong>≈40 m en seco, ≈80 m en mojado</strong>. ABS: pisar con fuerza máxima y sostenida, la vibración es normal. La distancia aumenta de forma <strong>exponencial</strong> con la velocidad."
+  },
+  mandos: {
+    title: "Mandos y Controles del Vehículo",
+    accent: "#84cc16", icon: "🎛️",
+    summary: [
+      "El conductor debe conocer y usar correctamente todos los mandos antes de iniciar la marcha. Una postura correcta reduce la fatiga.",
+      "Ajuste del asiento: la espalda debe quedar totalmente apoyada en el respaldo. Las manos deben alcanzar el volante con comodidad (posición 9 y 3 horas del reloj).",
+      "Ajuste de espejos: el espejo retrovisor interior debe mostrar la parte trasera completa. Los espejos laterales deben mostrar los costados y parte del vehículo propio para referencia.",
+      "Cinturón de seguridad: la parte diagonal va sobre el hombro y el pecho (nunca bajo el brazo). La parte horizontal va sobre las caderas (nunca sobre el abdomen).",
+      "Los testigos o indicadores del tablero (luces de advertencia) deben conocerse: aceite, temperatura del motor, batería, combustible, ABS, airbag, presión de llantas (TPMS).",
+      "El velocímetro indica la velocidad actual del vehículo. El cuentakilómetros registra los kilómetros recorridos para programar el mantenimiento.",
+      "El uso del teléfono celular en mano mientras conduce está prohibido y genera 3 puntos de penalización. Solo se permite con manos libres.",
+      "El limpiaparabrisas debe estar en buen estado para garantizar visibilidad en lluvia. Las escobillas se deben reemplazar periódicamente."
+    ],
+    highlight: "🎛️ Postura correcta = espalda apoyada, manos en 9 y 3. Cinturón: diagonal en <strong>hombro-pecho</strong>, nunca bajo el brazo. Celular en mano = <strong>prohibido</strong> (3 pts). Conocer todos los testigos del tablero."
+  },
+  proteccion: {
+    title: "Sistemas de Protección Pasiva",
+    accent: "#c084fc", icon: "🛡️",
+    summary: [
+      "Seguridad activa: mecanismos que evitan el accidente (frenos ABS, control de estabilidad, dirección asistida).",
+      "Seguridad pasiva: mecanismos que protegen a los ocupantes cuando el accidente ya ocurrió (cinturón, airbag, zonas de deformación, SRI).",
+      "Zonas de deformación: la carrocería está diseñada para deformarse y absorber la energía del impacto, mientras el habitáculo permanece rígido protegiendo a los ocupantes ('jaula de seguridad').",
+      "Airbag: bolsa de aire que se infla en milisegundos ante un impacto severo. Complementa al cinturón — no lo reemplaza. Sin cinturón puesto, el airbag puede causar lesiones graves.",
+      "SRI (Sistema de Retención Infantil): obligatorio para menores de edad. Debe estar homologado (certificado según normas internacionales). El tipo de SRI varía según el peso y edad del niño.",
+      "A velocidades superiores a 40 km/h, la probabilidad de que un peatón sobreviva a un atropello baja a menos del 10%. Por eso las zonas escolares tienen límite de 25 km/h.",
+      "El cinturón reduce el riesgo de muerte en un accidente hasta en un 50%. Mal colocado pierde totalmente su efectividad.",
+      "Los niños físicamente tienen campo de visión periférica más reducido y no calculan bien la velocidad de los vehículos — son usuarios especialmente vulnerables."
+    ],
+    highlight: "🛡️ Seguridad <strong>activa</strong> = evita el accidente. Seguridad <strong>pasiva</strong> = protege cuando ya ocurrió. Airbag + cinturón = juntos. SRI debe estar <strong>homologado</strong>. A +40 km/h: menos del <strong>10%</strong> de supervivencia para peatones."
+  },
+  riesgos: {
+    title: "Factores de Riesgo Vial (OMS)",
+    accent: "#fb923c", icon: "⚠️",
+    summary: [
+      "La OMS identifica 4 grupos de factores de riesgo: 1) Exposición al riesgo, 2) Posibilidad de que ocurra un accidente, 3) Gravedad de las lesiones, 4) Evaluación y atención posterior al accidente.",
+      "Exposición al riesgo: condiciones del entorno y del viaje (tipo de vía, distancias, volumen de tránsito, ausencia de aceras o ciclovías).",
+      "Posibilidad de accidente: mal estado de carreteras, falta de mantenimiento del vehículo, alcohol, velocidad excesiva, distracción, irrespeto a señales, fatiga.",
+      "Gravedad de las lesiones: no usar cinturón, no usar casco, no usar SRI, ausencia de airbag, diseño de la vía.",
+      "Evaluación posterior: retrasos en detección del accidente, falta de servicios de urgencias, traslado inadecuado, falta de atención postraumática.",
+      "Cuando varios factores de riesgo coinciden, la probabilidad de siniestro aumenta de forma exponencial (no solo suma).",
+      "Ejemplo crítico: conducir bajo lluvia en carretera con baches, a velocidad excesiva y con llantas desgastadas multiplica el riesgo de derrape.",
+      "Reducción del riesgo: adaptar velocidad al clima y estado de la vía, mantenimiento preventivo regular, y ajustar la conducción al propio nivel de alerta físico y mental."
+    ],
+    highlight: "⚠️ 4 grupos OMS: <strong>Exposición → Probabilidad → Gravedad → Atención</strong>. Cuando coinciden varios factores, el riesgo aumenta de forma <strong>exponencial</strong>. La fatiga, alcohol y velocidad son los 3 principales desencadenantes."
+  }
+});
+
 /* Etiquetas y colores por tema */
 const topicMeta = {
   senales:      { label:"Señales de Tránsito",       accent:"#38bdf8", icon:"🚦" },
@@ -1581,7 +1847,15 @@ const topicMeta = {
   clima:        { label:"Condiciones Climáticas",         accent:"#38bdf8", icon:"🌧️" },
   carga:        { label:"Carga y Remolques",              accent:"#f59e0b", icon:"🚛" },
   carriles:     { label:"Carriles Especiales",            accent:"#a78bfa", icon:"🛤️" },
-  semaforos:    { label:"Semáforos en Detalle",           accent:"#22c55e", icon:"🚦" }
+  semaforos:    { label:"Semáforos en Detalle",           accent:"#22c55e", icon:"🚦" },
+  trilogia:     { label:"Trilogía Vial y Seguridad",       accent:"#f97316", icon:"🔺" },
+  conductores:  { label:"Tipos de Conductor",               accent:"#a78bfa", icon:"👤" },
+  puntosdet:    { label:"Sistema de Puntos (Detalle)",      accent:"#ef4444", icon:"📉" },
+  dam:          { label:"DAM, DEV y Documentos Extra",      accent:"#38bdf8", icon:"📋" },
+  frenos:       { label:"Los Frenos y su Importancia",      accent:"#f43f5e", icon:"🛑" },
+  mandos:       { label:"Mandos y Controles del Vehículo",  accent:"#84cc16", icon:"🎛️" },
+  proteccion:   { label:"Sistemas de Protección Pasiva",    accent:"#c084fc", icon:"🛡️" },
+  riesgos:      { label:"Factores de Riesgo (OMS)",         accent:"#fb923c", icon:"⚠️" }
 };
 
 /* Etiquetas de peligro en el examen — disparan urgencia */
@@ -2630,6 +2904,283 @@ const signsData = [
     options:["El carril tiene velocidad reducida por obras","El carril está cerrado; ingresar está terminantemente prohibido","El carril cambiará de dirección en 500 metros","El carril es exclusivo para buses"],
     answer:1,
     explanation:"La X roja sobre un carril reversible indica que ese carril está cerrado. Ingresar a él es una infracción grave y puede provocar colisión frontal con tráfico en sentido contrario."
+  },
+  /* ── SEÑALES ADICIONALES ── */
+
+  /* REGLAMENTARIAS */
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="white" stroke="#cc0000" stroke-width="8"/>
+      <!-- flecha: sube y dobla a la IZQUIERDA -->
+      <path d="M 62 78 L 62 50 Q 62 30 38 30" stroke="#222" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <polygon points="28,30 42,22 42,38" fill="#222"/>
+      <line x1="25" y1="22" x2="85" y2="88" stroke="#cc0000" stroke-width="8" stroke-linecap="round"/>
+    </svg>`,
+    question:"¿Qué prohíbe esta señal circular?",
+    options:["Prohibido continuar de frente","Prohibido girar a la izquierda","Prohibido girar a la derecha","Prohibido hacer giro en U"],
+    answer:1,
+    explanation:"La señal circular blanca con borde rojo y una flecha que sube y dobla a la izquierda, cruzada por una diagonal roja, prohíbe girar a la izquierda. Es común en intersecciones de alta peligrosidad."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="white" stroke="#cc0000" stroke-width="8"/>
+      <!-- flecha: sube y dobla a la DERECHA -->
+      <path d="M 48 78 L 48 50 Q 48 30 72 30" stroke="#222" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <polygon points="82,30 68,22 68,38" fill="#222"/>
+      <line x1="25" y1="22" x2="85" y2="88" stroke="#cc0000" stroke-width="8" stroke-linecap="round"/>
+    </svg>`,
+    question:"¿Qué indica esta señal circular con borde rojo?",
+    options:["Prohibido adelantar","Prohibido girar a la derecha","Prohibido girar a la izquierda","Prohibido el paso de motos"],
+    answer:1,
+    explanation:"La señal circular blanca con borde rojo y una flecha que sube y dobla a la derecha, cruzada por una diagonal roja, prohíbe girar a la derecha. Debe obedecerse aunque la vía esté despejada."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="white" stroke="#cc0000" stroke-width="8"/>
+      <!-- camión simplificado -->
+      <rect x="22" y="45" width="38" height="22" rx="3" fill="#334"/>
+      <rect x="60" y="50" width="26" height="17" rx="3" fill="#334"/>
+      <circle cx="32" cy="67" r="5" fill="#667"/>
+      <circle cx="52" cy="67" r="5" fill="#667"/>
+      <circle cx="73" cy="67" r="5" fill="#667"/>
+      <line x1="25" y1="22" x2="85" y2="88" stroke="#cc0000" stroke-width="8" stroke-linecap="round"/>
+    </svg>`,
+    question:"¿Qué vehículos prohíbe circular esta señal?",
+    options:["Autobuses de transporte público","Vehículos de emergencia","Camiones y vehículos de carga pesada","Todos los vehículos motorizados"],
+    answer:2,
+    explanation:"Esta señal prohíbe el paso a camiones y vehículos de carga pesada. Se usa en vías que no soportan ese peso, en zonas residenciales o en áreas con restricción de carga."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="#1a56a0" stroke="white" stroke-width="4"/>
+      <text x="55" y="67" text-anchor="middle" fill="white" font-size="36" font-weight="bold" font-family="Arial">40</text>
+      <text x="55" y="84" text-anchor="middle" fill="white" font-size="10" font-family="Arial">mín</text>
+    </svg>`,
+    question:"¿Qué indica esta señal de círculo azul con número?",
+    options:["Velocidad máxima de 40 km/h","Velocidad mínima obligatoria de 40 km/h","Velocidad recomendada en curva","Límite de velocidad en zona de obras"],
+    answer:1,
+    explanation:"El círculo azul con número indica velocidad mínima obligatoria. A diferencia del círculo blanco con borde rojo (velocidad máxima), el azul exige no ir más lento que el número indicado — común en autopistas."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="#1a56a0" stroke="white" stroke-width="4"/>
+      <polygon points="55,22 82,68 28,68" fill="white"/>
+      <rect x="51" y="60" width="8" height="22" fill="#1a56a0"/>
+    </svg>`,
+    question:"¿Qué indica esta señal de círculo azul con flecha blanca hacia arriba?",
+    options:["Prohibido detenerse","Dirección obligatoria — debe circular en esa dirección","Carril exclusivo para vehículos de emergencia","Velocidad mínima de circulación"],
+    answer:1,
+    explanation:"La señal circular azul con flecha blanca indica dirección obligatoria. El conductor debe circular en el sentido indicado por la flecha. Ignorarla es una infracción grave."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="white" stroke="#cc0000" stroke-width="8"/>
+      <text x="55" y="62" text-anchor="middle" fill="#1a56a0" font-size="38" font-weight="bold" font-family="Arial">P</text>
+      <line x1="25" y1="22" x2="85" y2="88" stroke="#cc0000" stroke-width="9" stroke-linecap="round"/>
+    </svg>`,
+    question:"¿Qué indica esta señal circular con la letra P tachada?",
+    options:["Zona de estacionamiento permitido","Estacionamiento solo para personas con discapacidad","Prohibido estacionar en este sector","Parqueo con tarifa en las próximas horas"],
+    answer:2,
+    explanation:"La letra P tachada con una diagonal roja significa prohibición de estacionar. También se usa la línea amarilla pintada sobre el bordillo para indicar esta prohibición en la vía."
+  },
+  {
+    category:"Reglamentaria",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="28" width="100" height="55" rx="8" fill="#1a56a0" stroke="white" stroke-width="3"/>
+      <text x="55" y="70" text-anchor="middle" fill="white" font-size="28" font-weight="bold" font-family="Arial">BUS</text>
+    </svg>`,
+    question:"¿Qué indica una señal azul rectangular con la palabra BUS?",
+    options:["Parada de autobús próxima","Carril exclusivo para autobuses — los demás vehículos no pueden usarlo","Zona de carga y descarga de pasajeros","Ruta de autobús recomendada"],
+    answer:1,
+    explanation:"El carril exclusivo para buses no puede ser usado por otros vehículos durante los horarios indicados. Su objetivo es dar prioridad al transporte público para mejorar su puntualidad y fluidez."
+  },
+
+  /* PREVENTIVAS */
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <path d="M 65 75 Q 65 40 35 35" stroke="#222" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <polygon points="35,28 28,42 42,42" fill="#222"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva de diamante amarillo?",
+    options:["Prohibición de girar a la izquierda","Curva pronunciada a la izquierda próxima — reduzca velocidad","Desvío obligatorio a la izquierda","Vía de un solo sentido hacia la izquierda"],
+    answer:1,
+    explanation:"Esta señal preventiva advierte de una curva próxima hacia la izquierda. Debe reducir la velocidad antes de entrar a la curva, no durante, para mantener el control del vehículo."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <path d="M 42 75 Q 42 52 55 52 Q 68 52 68 29" stroke="#222" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <polygon points="68,22 61,36 75,36" fill="#222"/>
+    </svg>`,
+    question:"¿Qué tipo de tramo advierte esta señal preventiva en forma de diamante?",
+    options:["Una curva simple a la derecha","Dos curvas sucesivas (curva en S) — la primera hacia la derecha","Una cima de colina próxima","Una intersección en ángulo agudo"],
+    answer:1,
+    explanation:"La curva en S indica dos curvas consecutivas en sentidos opuestos. Exige reducir la velocidad significativamente porque no hay espacio para recuperar el control entre una curva y la otra."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- pendiente bajada: camión inclinado hacia abajo -->
+      <rect x="30" y="52" width="26" height="14" rx="3" fill="#222" transform="rotate(-20 43 59)"/>
+      <rect x="56" y="48" width="18" height="11" rx="2" fill="#222" transform="rotate(-20 65 53)"/>
+      <circle cx="36" cy="70" r="4" fill="#555" transform="rotate(-20 43 59)"/>
+      <circle cx="52" cy="65" r="4" fill="#555" transform="rotate(-20 43 59)"/>
+      <line x1="25" y1="42" x2="85" y2="75" stroke="#444" stroke-width="3" stroke-dasharray="4,3"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva con una pendiente descendente?",
+    options:["Zona de frenado obligatorio","Pendiente pronunciada hacia abajo — use freno motor, no frene continuamente","Camino resbaladizo en descenso","Zona de derrumbes en la vía"],
+    answer:1,
+    explanation:"La señal de pendiente descendente advierte que la bajada es pronunciada. Se recomienda usar el freno motor (bajar de marcha) para no sobrecalentar los frenos. Frenar continuamente puede provocar pérdida de eficacia de los frenos."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- cruce ferroviario: X con R -->
+      <line x1="35" y1="35" x2="75" y2="75" stroke="#222" stroke-width="8" stroke-linecap="round"/>
+      <line x1="75" y1="35" x2="35" y2="75" stroke="#222" stroke-width="8" stroke-linecap="round"/>
+      <text x="55" y="62" text-anchor="middle" fill="#222" font-size="20" font-weight="bold" font-family="Arial">R</text>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva de diamante amarillo con una X?",
+    options:["Intersección sin semáforo próxima","Cruce de ferrocarril próximo — el tren siempre tiene prioridad","Carril cerrado por obras","Zona de adelantamiento prohibido"],
+    answer:1,
+    explanation:"Esta señal advierte que hay un cruce de ferrocarril próximo. El tren siempre tiene prioridad absoluta sobre cualquier vehículo. Debe detenerse, mirar en ambos sentidos y cruzar solo cuando no haya tren a la vista."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- rocas cayendo -->
+      <polygon points="55,28 70,55 40,55" fill="#555"/>
+      <circle cx="72" cy="62" r="7" fill="#666"/>
+      <circle cx="62" cy="72" r="5" fill="#555"/>
+      <circle cx="50" cy="70" r="6" fill="#666"/>
+      <line x1="55" y1="55" x2="72" y2="62" stroke="#444" stroke-width="2"/>
+    </svg>`,
+    question:"¿Qué riesgo advierte esta señal preventiva?",
+    options:["Zona de fuertes vientos","Deslizamientos de tierra o derrumbes en la vía","Pavimento irregular por obras","Área de avalanchas de nieve"],
+    answer:1,
+    explanation:"La señal de deslizamientos indica que en ese tramo pueden caer rocas o tierra sobre la calzada. Se debe reducir la velocidad, aumentar la distancia de seguimiento y estar atento a materiales sobre la vía."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- vaca simplificada -->
+      <ellipse cx="55" cy="55" rx="20" ry="13" fill="#333"/>
+      <circle cx="42" cy="45" r="9" fill="#333"/>
+      <!-- patas -->
+      <line x1="45" y1="68" x2="43" y2="80" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+      <line x1="53" y1="68" x2="51" y2="80" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+      <line x1="60" y1="68" x2="62" y2="80" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+      <!-- cuernos -->
+      <line x1="38" y1="37" x2="33" y2="30" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+      <line x1="46" y1="37" x2="50" y2="30" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva con la figura de un animal?",
+    options:["Zona de caza prohibida","Presencia frecuente de animales (ganado o fauna silvestre) cruzando la vía","Área de reserva natural — velocidad reducida","Zona de pastoreo — prohibido el paso de vehículos pesados"],
+    answer:1,
+    explanation:"Esta señal advierte que en ese tramo es frecuente el cruce de animales (ganado o fauna silvestre). Debe reducir la velocidad, especialmente de noche, ya que los animales pueden aparecer de forma imprevista."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- puente angosto: dos líneas paralelas estrechas -->
+      <rect x="42" y="30" width="5" height="50" rx="2" fill="#333"/>
+      <rect x="63" y="30" width="5" height="50" rx="2" fill="#333"/>
+      <rect x="35" y="50" width="40" height="8" rx="2" fill="#333"/>
+      <!-- flechas apuntando adentro -->
+      <polygon points="25,54 36,48 36,60" fill="#333"/>
+      <polygon points="85,54 74,48 74,60" fill="#333"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva?",
+    options:["Túnel con altura restringida próximo","Puente angosto próximo — puede no caber más de un vehículo a la vez","Carretera con carril reducido por obras","Zona de pesaje de vehículos"],
+    answer:1,
+    explanation:"La señal de puente angosto indica que el puente próximo tiene una anchura reducida. Debe reducir la velocidad y ceder el paso si viene un vehículo en sentido contrario, ya que puede no haber espacio para ambos."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- resalto: perfil de lomita -->
+      <path d="M 28 65 Q 40 65 48 48 Q 56 32 64 48 Q 72 65 82 65" stroke="#333" stroke-width="7" fill="none" stroke-linecap="round"/>
+    </svg>`,
+    question:"¿Qué advierte esta señal preventiva con una forma de lomo de toro?",
+    options:["Zona de baches o pavimento deteriorado","Resalto o badén (lomo de toro) próximo — reduzca la velocidad","Pendiente pronunciada en ascenso","Cima de colina con visibilidad reducida"],
+    answer:1,
+    explanation:"El resalto o badén (conocido como 'lomo de toro') es un elemento físico en la vía diseñado para reducir la velocidad. Pasarlo a alta velocidad puede dañar el vehículo y provocar pérdida de control."
+  },
+  {
+    category:"Preventiva",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="90" height="90" rx="6" fill="#f5c518" stroke="#333" stroke-width="3" transform="rotate(45 55 55)"/>
+      <!-- cima de colina: arco -->
+      <path d="M 25 72 Q 55 20 85 72" stroke="#333" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <line x1="25" y1="72" x2="85" y2="72" stroke="#333" stroke-width="5"/>
+    </svg>`,
+    question:"¿Por qué es peligrosa una cima de colina y qué indica esta señal?",
+    options:["Porque hay viento fuerte en la cima","Porque la visibilidad hacia adelante es muy reducida — no se ve si viene tráfico de frente","Porque la vía se vuelve resbaladiza en la cima","Porque está prohibido adelantar en toda colina"],
+    answer:1,
+    explanation:"En la cima de una colina la visibilidad hacia adelante es nula o muy reducida: no se puede ver si viene un vehículo en sentido contrario. Por eso está prohibido adelantar y se debe reducir la velocidad antes de llegar a la cima."
+  },
+
+  /* INFORMATIVAS */
+  {
+    category:"Informativa",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="5" width="100" height="100" rx="10" fill="#1a56a0" stroke="white" stroke-width="3"/>
+      <!-- surtidor de gasolina -->
+      <rect x="35" y="30" width="22" height="50" rx="3" fill="white"/>
+      <rect x="57" y="40" width="10" height="8" rx="2" fill="white"/>
+      <line x1="67" y1="44" x2="78" y2="44" stroke="white" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="78" cy="50" r="5" fill="white"/>
+      <rect x="40" y="55" width="12" height="18" rx="2" fill="#1a56a0"/>
+    </svg>`,
+    question:"¿Qué indica esta señal informativa azul con una figura de surtidor?",
+    options:["Taller mecánico próximo","Estación de gasolina o gasolinera en las proximidades","Lavadero de vehículos autorizado","Zona de recarga de vehículos eléctricos"],
+    answer:1,
+    explanation:"Esta señal informativa indica que hay una estación de servicio (gasolinera) próxima. Es una señal de servicios que ayuda al conductor a planificar su ruta, especialmente en carreteras largas."
+  },
+  {
+    category:"Informativa",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="5" width="100" height="100" rx="10" fill="#1a56a0" stroke="white" stroke-width="3"/>
+      <!-- cruz de primeros auxilios -->
+      <rect x="38" y="25" width="34" height="60" rx="4" fill="white"/>
+      <rect x="25" y="38" width="60" height="34" rx="4" fill="white"/>
+      <rect x="43" y="30" width="24" height="50" rx="3" fill="#cc0000"/>
+      <rect x="30" y="43" width="50" height="24" rx="3" fill="#cc0000"/>
+    </svg>`,
+    question:"¿Qué indica esta señal informativa azul con una cruz roja?",
+    options:["Hospital exclusivo para emergencias de tránsito","Puesto de primeros auxilios, Cruz Roja o servicio médico de emergencias","Farmacia de turno las 24 horas","Zona de atención a víctimas de accidentes"],
+    answer:1,
+    explanation:"La cruz roja sobre fondo azul indica un puesto de primeros auxilios o instalación de la Cruz Roja próxima. Es fundamental conocer su ubicación en carreteras largas o en caso de accidente."
+  },
+  {
+    category:"Informativa",
+    svg:`<svg viewBox="0 0 110 110" width="130" height="130" xmlns="http://www.w3.org/2000/svg">
+      <!-- señal de destino: rectángulo verde con flecha -->
+      <rect x="5" y="28" width="100" height="55" rx="8" fill="#1a6b2a" stroke="white" stroke-width="3"/>
+      <text x="38" y="50" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial">SAN JOSÉ</text>
+      <text x="38" y="65" text-anchor="middle" fill="white" font-size="10" font-family="Arial">42 km</text>
+      <polygon points="72,45 90,55 72,65" fill="white"/>
+      <rect x="62" y="51" width="20" height="8" fill="white"/>
+    </svg>`,
+    question:"¿Qué tipo de información proporciona esta señal verde rectangular con una flecha y nombre de ciudad?",
+    options:["Una señal preventiva de intersección próxima","Una señal informativa de destino que indica la dirección y distancia a una localidad","Una señal reglamentaria de dirección obligatoria","Una señal de tránsito temporal por obras en la vía"],
+    answer:1,
+    explanation:"Las señales verdes rectangulares con flechas son señales informativas de destino. Indican la dirección y la distancia en kilómetros hacia una localidad. Ayudan al conductor a orientarse sin necesidad de detenerse."
   }
 ];
 
@@ -3439,6 +3990,85 @@ window.printSummary = function() {
   printWin.document.close();
   setTimeout(() => printWin.print(), 500);
 };
+
+
+// ── PREGUNTAS NUEVAS — MANUAL OFICIAL COSEVI ─────────────────────
+(function addManualQuestions() {
+  const nq = [
+
+    /* TRILOGÍA VIAL */
+    { t:"trilogia", q:{ question:"¿Cuáles son los tres componentes de la 'trilogía vial'?", options:["El conductor, el reglamento y la vía","El ser humano, el vehículo y la vía y su entorno","El motor, la carrocería y las llantas","El semáforo, la señal y el oficial de tránsito"], answer:1, explanation:"La trilogía vial es el sistema integrado por el ser humano, el vehículo y la vía y su entorno. Cualquier falla en uno de estos tres elementos puede causar un accidente." } },
+    { t:"trilogia", q:{ question:"¿Cuál es el factor más importante dentro de la trilogía vial?", options:["El vehículo, porque es el que se desplaza","La vía, porque define las condiciones de circulación","El ser humano (conductor), porque el movimiento depende fundamentalmente de él","Los tres factores tienen exactamente el mismo peso"], answer:2, explanation:"Aunque los tres factores son interdependientes, el ser humano es el más importante porque su conducta, estado físico y decisiones determinan en mayor medida cómo se desplaza el vehículo." } },
+    { t:"trilogia", q:{ question:"¿Qué establece el enfoque de 'Sistema Seguro' en seguridad vial?", options:["Que los conductores nunca cometen errores si se entrenan bien","Que las vías deben diseñarse para que los errores humanos no tengan consecuencias fatales","Que el vehículo es responsable de evitar todos los accidentes","Que la velocidad no influye en la gravedad de los accidentes"], answer:1, explanation:"El Sistema Seguro reconoce que el ser humano comete errores inevitablemente. Por eso propone diseñar vías, velocidades y vehículos de forma que esos errores no resulten en muertes o lesiones graves." } },
+    { t:"trilogia", q:{ question:"¿En qué año se promulgó la Ley de Tránsito vigente en Costa Rica (Ley 9078)?", options:["1993","2005","2012","1976"], answer:2, explanation:"La Ley 9078 — Ley de Tránsito por Vías Públicas Terrestres y Seguridad Vial — fue promulgada el 26 de octubre de 2012, sustituyendo a la anterior Ley 7331 de 1993." } },
+    { t:"trilogia", q:{ question:"¿Cuántos objetivos tiene la Seguridad Vial según el manual oficial de Costa Rica?", options:["4 objetivos","6 objetivos","8 objetivos","10 objetivos"], answer:2, explanation:"La Seguridad Vial tiene 8 objetivos: disminuir daños, dar fluidez al tránsito, reducir contaminación, proteger infraestructura, conservar vehículos, reducir consumo energético, educar al ciudadano y capacitar funcionarios." } },
+
+    /* TIPOS DE CONDUCTOR */
+    { t:"conductores", q:{ question:"¿Qué es un conductor novato según la Ley de Tránsito de Costa Rica?", options:["Quien obtiene su licencia por primera vez, sin importar los años que tenga","Quien obtiene su licencia por primera vez y no supera los 3 años de haberla obtenido","Quien tiene menos de 25 años y conduce con licencia B-1","Quien no ha aprobado el examen práctico de manejo"], answer:1, explanation:"Conductor novato es toda persona que adquiere su licencia de conducir por primera vez y que no ha superado los 3 años desde que la obtuvo. Aplica para licencias tipo A, B1 y D." } },
+    { t:"conductores", q:{ question:"¿Qué tipo de licencia B requiere aprobar un curso especial además de los demás requisitos?", options:["B-1","B-2","B-3","B-4"], answer:3, explanation:"La licencia B-4 — que habilita a conducir vehículos pesados articulados como cabezales con tráiler — exige adicionalmente aprobar un curso especial impartido o acreditado por la Dirección General de Educación Vial." } },
+    { t:"conductores", q:{ question:"¿Cuál es la edad mínima y la experiencia requerida para obtener una licencia B-3?", options:["18 años y 1 año de licencia B","20 años y 2 años de licencia B","22 años y 3 años de licencia B o C","25 años y 5 años de licencia B"], answer:2, explanation:"La licencia B-3 permite conducir vehículos de cualquier peso excepto articulados pesados. Requiere tener 22 años cumplidos y al menos 3 años de experiencia con licencia clase B o C vigente." } },
+    { t:"conductores", q:{ question:"Para usar el permiso temporal de aprendizaje, ¿quién debe acompañar al aprendiz?", options:["Cualquier mayor de edad con licencia vigente","Un familiar directo del aprendiz","Una persona con licencia del mismo tipo o superior, vigente y obtenida con al menos 5 años de antelación","Un instructor certificado de una escuela de manejo"], answer:2, explanation:"La ley exige que quien acompañe al aprendiz tenga una licencia del mismo tipo o superior a la que se aspira, que esté vigente y haya sido obtenida con al menos 5 años de anterioridad." } },
+    { t:"conductores", q:{ question:"¿Qué tipo de conductor es aquel que renueva su licencia (más de 3 años) y no se dedica profesionalmente a conducir?", options:["Conductor novato","Conductor profesional","Conductor no tipificado (conductor común)","Conductor no acreditado"], answer:2, explanation:"El conductor 'no tipificado' o conductor común es quien renueva su licencia (es decir, lleva más de 3 años con ella) y no ejerce la conducción como actividad laboral principal. Se acredita con licencias A, B1 y B2." } },
+
+    /* SISTEMA DE PUNTOS DETALLE */
+    { t:"puntosdet", q:{ question:"¿Cuántos puntos puede acumular como máximo un conductor con licencia de vigencia de 6 años antes de ser suspendido?", options:["6 puntos","8 puntos","10 puntos","12 puntos"], answer:3, explanation:"El máximo de puntos varía según la vigencia de la licencia: 6 años → 12 puntos máximo; 4 años → 8 puntos; 3 años → 6 puntos. Llegar al máximo suspende la licencia." } },
+    { t:"puntosdet", q:{ question:"¿Cuánto dura la primera suspensión de licencia por acumular el máximo de puntos?", options:["6 meses","12 meses (1 año)","18 meses","24 meses (2 años)"], answer:1, explanation:"La primera suspensión por acumular todos los puntos dura 12 meses. La segunda suspensión sería de 24 meses y a partir de la tercera, de 36 meses (3 años)." } },
+    { t:"puntosdet", q:{ question:"¿Qué sucede si un conductor acumula 5 o más puntos sin llegar al máximo permitido?", options:["No hay consecuencias hasta llegar al máximo","Al renovar la licencia deberá realizar trabajo comunal o aprobar un curso de reeducación vial","Se le suspende la licencia por 6 meses automáticamente","Debe hacer un nuevo examen práctico de manejo"], answer:1, explanation:"Con 5 o más puntos acumulados (sin llegar al máximo de suspensión), al momento de renovar la licencia el conductor debe realizar trabajo comunal o aprobar un curso de sensibilización y reeducación vial." } },
+    { t:"puntosdet", q:{ question:"¿Cuántos puntos genera conducir con el teléfono celular en mano?", options:["1 punto","2 puntos","3 puntos","6 puntos"], answer:2, explanation:"El uso del teléfono celular en mano mientras se conduce genera 3 puntos de penalización en el sistema de evaluación permanente, además de la multa económica correspondiente." } },
+
+    /* DAM, DEV Y DOCUMENTOS EXTRA */
+    { t:"dam", q:{ question:"¿En qué situación aplica la Declaración de Accidente Menor (DAM)?", options:["En cualquier accidente de tránsito","Solo cuando hay personas heridas leves","Exclusivamente cuando solo hay daños materiales y ninguna persona está herida","Cuando el accidente ocurre en horario nocturno"], answer:2, explanation:"La DAM es un procedimiento simplificado exclusivo para accidentes con daños materiales únicamente, sin personas heridas. Permite resolver la situación ágilmente sin necesidad de esperar a la policía." } },
+    { t:"dam", q:{ question:"¿Qué es la DEV (Dirección Electrónica Vial)?", options:["Un dispositivo GPS obligatorio en los vehículos","El correo electrónico que todo conductor debe registrar ante el COSEVI para recibir notificaciones oficiales","El número de placa digital del vehículo","El sistema de multas electrónicas de la policía"], answer:1, explanation:"La DEV es el domicilio digital del conductor: un correo electrónico que debe registrarse obligatoriamente ante el COSEVI. En él se notifican infracciones, resoluciones de apelaciones y cualquier comunicación oficial." } },
+    { t:"dam", q:{ question:"¿Cuántos caracteres tiene el código VIN de un vehículo?", options:["10 caracteres","13 caracteres","17 caracteres","20 caracteres"], answer:2, explanation:"El VIN (Vehicle Identification Number) es un código estandarizado de 17 caracteres que identifica de forma única a cada vehículo en el mundo, con datos del fabricante, modelo, año y número de serie." } },
+    { t:"dam", q:{ question:"¿Qué indica una placa metálica de fondo verde en un vehículo costarricense?", options:["Que el vehículo es de uso oficial del gobierno","Que el vehículo utiliza energía eléctrica","Que el vehículo es de transporte público","Que el vehículo está exento de IVE"], answer:1, explanation:"Las placas con fondo de color verde identifican a los vehículos de propulsión eléctrica. Es una distinción visual importante para reconocerlos en la vía." } },
+    { t:"dam", q:{ question:"¿Qué ocurre si la DEV no puede recibir la notificación oficial del COSEVI tras tres intentos?", options:["La infracción queda automáticamente anulada","Se notifica en persona en el domicilio del conductor","El COSEVI realiza una publicación en La Gaceta y en un diario de circulación nacional","El expediente se archiva sin consecuencias"], answer:2, explanation:"Si tras 3 intentos no se logra entregar la notificación a la DEV, la autoridad realiza una única publicación en La Gaceta y en un diario nacional. El conductor sigue siendo responsable aunque no la haya recibido personalmente." } },
+
+    /* FRENOS */
+    { t:"frenos", q:{ question:"¿Cuál es la distancia aproximada de frenado a 100 km/h en pavimento seco?", options:["20 metros","40 metros","60 metros","80 metros"], answer:1, explanation:"A 100 km/h en pavimento seco, la distancia de frenado es de aproximadamente 40 metros. En pavimento mojado esta distancia se duplica (≈80 metros). La distancia total de parada incluye además la distancia de reacción." } },
+    { t:"frenos", q:{ question:"¿Cómo se deben usar los frenos en un vehículo con sistema ABS ante una emergencia?", options:["Bombear el pedal repetidamente para evitar el bloqueo","Presionar el pedal de freno con fuerza máxima y sostenida sin soltarlo","Presionar suavemente y aumentar la presión gradualmente","Aplicar el freno de mano simultáneamente"], answer:1, explanation:"Con ABS, la técnica correcta es presionar el pedal con fuerza máxima y mantenerlo así. El sistema bombea automáticamente para evitar el bloqueo de las ruedas. La vibración que se siente en el pedal es normal y no se debe soltar." } },
+    { t:"frenos", q:{ question:"¿Qué se siente en el pedal de freno cuando el sistema ABS está actuando?", options:["El pedal se pone muy duro y no se mueve","Una vibración o pulsación — esto es normal y no se debe soltar el freno","El pedal se hunde completamente hasta el piso","El vehículo emite una alarma sonora"], answer:1, explanation:"Cuando el ABS entra en acción, el pedal vibra o pulsa. Esto es completamente normal: es el sistema realizando ciclos rápidos de frenado para mantener el control. El conductor NO debe soltar el pedal." } },
+    { t:"frenos", q:{ question:"¿Qué técnica se recomienda en bajadas largas para no sobrecalentar los frenos?", options:["Frenar de forma continua y suave durante toda la bajada","Usar el freno motor (bajar de marcha) combinado con frenos intermitentes","Mantener el pie sobre el pedal de freno con presión constante media","Usar el freno de mano para reducir la velocidad"], answer:1, explanation:"En descensos prolongados, usar el freno motor bajando de marcha evita el sobrecalentamiento de los frenos de disco o tambor. Los frenos sobrecalentados pueden perder eficacia ('fading'), lo que es muy peligroso." } },
+
+    /* MANDOS Y CONTROLES */
+    { t:"mandos", q:{ question:"¿En qué posición del volante deben colocarse las manos para una conducción correcta?", options:["En la parte superior, como si fueran las 12 del reloj","En posición de las 9 y 3 del reloj","En la parte inferior, como si fueran las 6 del reloj","Una mano en la parte superior y otra en el centro"], answer:1, explanation:"La posición correcta es con las manos en las 9 y 3 del reloj. Esto permite un control óptimo del volante, facilita las maniobras con ambas manos y es la posición más segura en caso de activación del airbag." } },
+    { t:"mandos", q:{ question:"¿Cómo debe colocarse correctamente la parte diagonal del cinturón de seguridad?", options:["Por debajo del brazo para mayor comodidad","Sobre el hombro y el pecho, nunca bajo el brazo","Sobre el cuello para mejor sujeción","Detrás de la espalda si el viaje es corto"], answer:1, explanation:"La parte diagonal del cinturón debe cruzar sobre el hombro y el pecho. Colocarlo bajo el brazo elimina la protección en un impacto y puede causar lesiones internas graves en la zona abdominal." } },
+    { t:"mandos", q:{ question:"¿Cuál es la forma correcta de ajustar el asiento antes de conducir?", options:["Inclinado hacia atrás para mayor comodidad","Con la espalda totalmente apoyada en el respaldo y las manos alcanzando el volante con comodidad","Lo más cerca posible del volante para mayor control","Reclinado para reducir la fatiga en viajes largos"], answer:1, explanation:"La postura correcta requiere que la espalda quede completamente apoyada en el respaldo y que las manos alcancen el volante sin esfuerzo. Esto reduce la fatiga y facilita el control preciso del vehículo." } },
+
+    /* PROTECCIÓN PASIVA */
+    { t:"proteccion", q:{ question:"¿Cuál es la diferencia entre seguridad activa y seguridad pasiva en un vehículo?", options:["La seguridad activa protege al conductor y la pasiva a los pasajeros","La seguridad activa evita que ocurra el accidente; la pasiva protege a los ocupantes cuando ya ocurrió","La seguridad activa funciona de día y la pasiva de noche","La seguridad activa es opcional y la pasiva es obligatoria"], answer:1, explanation:"Seguridad activa = mecanismos que evitan el accidente (frenos ABS, control de estabilidad). Seguridad pasiva = mecanismos que protegen cuando el accidente ya ocurrió (cinturón, airbag, zonas de deformación, SRI)." } },
+    { t:"proteccion", q:{ question:"¿Por qué a velocidades superiores a 40 km/h la probabilidad de que un peatón sobreviva a un atropello baja a menos del 10%?", options:["Porque los vehículos modernos son más pesados","Porque la energía cinética del impacto es proporcional al cuadrado de la velocidad y el cuerpo humano no puede absorberla","Porque los frenos no funcionan a esas velocidades","Porque los peatones no prestan atención a esas velocidades"], answer:1, explanation:"La energía de un impacto aumenta exponencialmente con la velocidad. A 40+ km/h, la fuerza del golpe supera ampliamente la capacidad del cuerpo humano para absorberla sin lesiones mortales. Por eso las zonas escolares tienen límite de 25 km/h." } },
+    { t:"proteccion", q:{ question:"¿El airbag reemplaza al cinturón de seguridad?", options:["Sí, el airbag es más moderno y más efectivo","No; el airbag complementa al cinturón. Sin cinturón puesto, el airbag puede causar lesiones graves","Sí, pero solo en colisiones frontales","Solo en vehículos con airbag lateral el cinturón es necesario"], answer:1, explanation:"El airbag es complementario al cinturón, nunca un sustituto. Sin cinturón, al inflarse el airbag puede golpear al ocupante con fuerza letal. Ambos sistemas trabajan juntos para la protección máxima." } },
+    { t:"proteccion", q:{ question:"¿Qué distancia lateral mínima debe mantener un vehículo al rebasar a un ciclista?", options:["0.5 metros","1 metro","1.5 metros","2 metros"], answer:2, explanation:"La ley establece que al sobrepasar a un ciclista se debe mantener un margen mínimo de 1.5 metros entre el vehículo y la bicicleta. Además, está prohibido rebasar en zonas de poca visibilidad." } },
+
+    /* FACTORES DE RIESGO OMS */
+    { t:"riesgos", q:{ question:"¿Cuántos grupos de factores de riesgo identifica la OMS en relación con los accidentes de tránsito?", options:["2 grupos","3 grupos","4 grupos","6 grupos"], answer:2, explanation:"La OMS identifica 4 grupos: 1) Exposición al riesgo (condiciones del entorno), 2) Posibilidad de que ocurra el accidente (conducta del conductor), 3) Gravedad de las lesiones, 4) Evaluación y atención después del accidente." } },
+    { t:"riesgos", q:{ question:"¿Cómo aumenta el riesgo de accidente cuando coinciden varios factores de riesgo simultáneamente?", options:["El riesgo aumenta de forma lineal (suma)","El riesgo aumenta de forma exponencial (multiplicación)","El riesgo no cambia; lo que importa es cada factor individualmente","El riesgo disminuye porque el conductor pone más atención"], answer:1, explanation:"Cuando varios factores de riesgo coinciden (lluvia + velocidad + llantas desgastadas + fatiga), el peligro no se suma sino que se multiplica exponencialmente. Es fundamental controlar todos los factores al mismo tiempo." } },
+    { t:"riesgos", q:{ question:"¿Cuál de los siguientes elementos pertenece al grupo de 'gravedad de las lesiones' según la OMS?", options:["El volumen de tránsito de la vía","La velocidad excesiva del conductor","El no uso de dispositivos de seguridad como cinturón o SRI","La falta de mantenimiento del vehículo"], answer:2, explanation:"El grupo 'gravedad de las lesiones' incluye factores que determinan qué tan graves son las consecuencias cuando el accidente ya ocurrió: principalmente el no uso de cinturón, casco o SRI, y el diseño de la vía." } },
+    { t:"riesgos", q:{ question:"¿Qué factor de la trilogía vial está dentro del grupo 'posibilidad de que ocurra un accidente'?", options:["La ausencia de aceras en la vía","El alcohol, la velocidad excesiva y la distracción del conductor","La falta de servicios de urgencias en el lugar del accidente","El diseño del habitáculo del vehículo"], answer:1, explanation:"El alcohol, la velocidad excesiva, la distracción, el irrespeto a señales y la fatiga son factores que aumentan directamente la posibilidad de que ocurra un accidente. Pertenecen principalmente al factor humano de la trilogía vial." } },
+
+    /* EDUCACIÓN VIAL: datos clave nuevos */
+    { t:"educacionvial", q:{ question:"¿Por qué los niños son usuarios especialmente vulnerables en las vías?", options:["Porque son más lentos para caminar","Porque tienen campo de visión periférica más reducido, no calculan bien la velocidad de los vehículos y se distraen fácilmente","Porque no conocen las señales de tránsito","Porque no pueden usar cinturón de seguridad"], answer:1, explanation:"Los niños tienen capacidades físicas y perceptivas distintas a los adultos: visión periférica reducida, dificultad para calcular velocidades y facilidad para distraerse. Son el grupo más vulnerable en el entorno vial." } },
+    { t:"educacionvial", q:{ question:"¿Cuál es la jerarquía correcta de prioridad de paso en las vías costarricenses?", options:["Emergencias → Oficial → Tren → Jerarquía vía → Ley derecha","Tren → Oficial → Emergencias → Jerarquía vía → Ley derecha → Semáforo → Ceda","Semáforo → Oficial → Emergencias → Tren → Ley derecha","Ley derecha → Semáforo → Emergencias → Tren"], answer:1, explanation:"La jerarquía es: 1) Tren, 2) Inspector de tránsito, 3) Vehículos de emergencia, 4) Jerarquía de vías (primaria>secundaria), 5) Ley de la mano derecha, 6) Semáforo prevalece sobre Alto, 7) Ceda prevalece sobre Alto." } },
+    { t:"educacionvial", q:{ question:"¿A qué distancia mínima de una intersección o cruce peatonal está prohibido estacionarse?", options:["5 metros","10 metros","15 metros","20 metros"], answer:1, explanation:"Está prohibido detenerse o estacionar a menos de 10 metros de una intersección o cruce peatonal. Esta norma garantiza la visibilidad y el libre acceso de peatones y conductores a la intersección." } },
+
+    /* DOCUMENTOS: placa y permiso */
+    { t:"documentos", q:{ question:"¿Cuál es la vigencia del permiso temporal de aprendizaje de conducción?", options:["1 mes","3 meses","6 meses","12 meses"], answer:1, explanation:"El permiso temporal de aprendizaje tiene una vigencia de 3 meses. Durante ese período el aprendiz debe practicar acompañado de una persona con licencia vigente del mismo tipo o superior obtenida hace al menos 5 años." } },
+    { t:"documentos", q:{ question:"¿En qué lugar del parabrisas debe colocarse la placa adhesiva (calcomanía) del vehículo?", options:["En el centro inferior del parabrisas","En el extremo superior derecho del parabrisas","En el extremo inferior izquierdo del parabrisas","En cualquier lugar visible del parabrisas"], answer:1, explanation:"La placa adhesiva debe colocarse obligatoriamente en el extremo superior derecho del parabrisas delantero. Junto a ella deben ir también la calcomanía de la IVE y el marchamo del año en curso." } },
+
+    /* CONCEPTOS: ampliación */
+    { t:"conceptos", q:{ question:"¿Cuántos objetivos tiene la Seguridad Vial en Costa Rica según el manual oficial?", options:["5 objetivos","6 objetivos","7 objetivos","8 objetivos"], answer:3, explanation:"La Seguridad Vial tiene 8 objetivos: disminuir daños, dar fluidez, reducir contaminación, proteger infraestructura, conservar vehículos, reducir consumo energético, educar al ciudadano y capacitar funcionarios públicos de tránsito." } },
+    { t:"conceptos", q:{ question:"¿Cuál es la diferencia entre 'tránsito' y 'transporte'?", options:["Son sinónimos exactos en la legislación costarricense","Tránsito es la acción de desplazarse; transporte es trasladar personas o cosas. El tránsito es más amplio porque comprende al transporte","El transporte es más amplio porque incluye el tránsito","Tránsito se usa para vehículos y transporte solo para personas"], answer:1, explanation:"Tránsito es la acción de desplazarse o trasladarse (concepto amplio). Transporte es trasladar personas o bienes de un lugar a otro (concepto específico). El tránsito comprende tanto el transporte como la simple circulación." } }
+
+  ];
+  nq.forEach(item => {
+    if (!questionsByTopic[item.t]) questionsByTopic[item.t] = [];
+    questionsByTopic[item.t].push(item.q);
+  });
+  // Asegurar que topicStats incluye los nuevos temas
+  ["trilogia","conductores","puntosdet","dam","frenos","mandos","proteccion","riesgos"].forEach(k => {
+    if (!state.topicStats[k]) state.topicStats[k] = { answered:0, correct:0 };
+  });
+})();
 
 /* ================================================================
    COMPATIBILIDAD CON LLAMADAS GLOBALES DEL HTML ORIGINAL
