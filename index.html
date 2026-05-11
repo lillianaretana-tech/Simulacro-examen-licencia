@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Práctica Examen de Licencia · Costa Rica</title>
+  <title>Simulador Licencia CR · Auto y Moto</title>
   <style>
     /* ============================================================
        VARIABLES Y RESET
@@ -556,9 +556,134 @@
   color:#64748b;
 }
 
+
+/* ══ SELECTOR AUTO / MOTO ══ */
+.mode-overlay{
+  position:fixed;inset:0;z-index:9998;
+  background:rgba(6,9,18,.94);
+  backdrop-filter:blur(12px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.mode-overlay.show{display:flex}
+.mode-box{
+  width:min(760px,100%);
+  border:1px solid rgba(255,255,255,.1);
+  background:linear-gradient(160deg,#0a0f1e,#10182d);
+  border-radius:28px;
+  padding:28px;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+}
+.mode-box h2{
+  margin:0 0 8px;
+  font-size:clamp(1.6rem,4vw,2.4rem);
+  color:#eef2ff;
+}
+.mode-box p{
+  color:#8896b8;
+  line-height:1.6;
+  margin-bottom:20px;
+}
+.mode-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.mode-card{
+  text-align:left;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.045);
+  border-radius:22px;
+  padding:22px;
+  color:#eef2ff;
+  transition:.18s ease;
+  font-family:inherit;
+}
+.mode-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(56,189,248,.55);
+  background:rgba(56,189,248,.08);
+}
+.mode-card .ico{font-size:3rem;margin-bottom:8px}
+.mode-card h3{font-size:1.35rem;margin:0 0 8px}
+.mode-card span{display:block;color:#8896b8;font-size:.92rem;line-height:1.55}
+.mode-card.auto:hover{border-color:rgba(56,189,248,.65)}
+.mode-card.moto:hover{border-color:rgba(249,115,22,.65);background:rgba(249,115,22,.08)}
+.mode-note{
+  margin-top:16px;
+  font-size:.82rem;
+  color:#64748b;
+  line-height:1.5;
+}
+.exam-mode-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:10px 0 12px;
+  padding:8px 14px;
+  border-radius:999px;
+  background:rgba(56,189,248,.09);
+  border:1px solid rgba(56,189,248,.28);
+  color:#38bdf8;
+  font-weight:800;
+  font-size:.86rem;
+}
+.exam-mode-switch{
+  margin-top:12px;
+  width:100%;
+  padding:11px;
+  border-radius:12px;
+  border:1px solid rgba(56,189,248,.35);
+  background:rgba(56,189,248,.08);
+  color:#38bdf8;
+  font-family:inherit;
+  font-weight:800;
+  cursor:pointer;
+}
+.exam-mode-switch:hover{background:rgba(56,189,248,.14)}
+@media(max-width:680px){.mode-grid{grid-template-columns:1fr}.mode-box{padding:22px}}
+
+
+    /* ============================================================
+       SEGURIDAD — PROTECCIÓN DE CONTENIDO
+    ============================================================ */
+    * { -webkit-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none; }
+    /* Permitir selección solo en inputs */
+    input, textarea { -webkit-user-select: text !important;
+                      user-select: text !important; }
+    @media print {
+      body::before {
+        content: "© Simulador Licencia CR — Contenido protegido. Uso personal no transferible.";
+        display: flex; justify-content: center; align-items: center;
+        height: 100vh; font-size: 2rem; font-family: sans-serif;
+        color: #333; background: white;
+      }
+      body > * { display: none !important; }
+    }
+    /* Overlay de bloqueo por DevTools */
+    #_devblock {
+      display: none; position: fixed; inset: 0; z-index: 99999;
+      background: rgba(9,13,26,.97);
+      justify-content: center; align-items: center; flex-direction: column;
+      gap: 18px; font-family: 'Segoe UI', sans-serif;
+    }
+    #_devblock.show { display: flex !important; }
+    #_devblock h2 { color: #ef4444; font-size: 1.6rem; margin: 0; }
+    #_devblock p  { color: #8896b8; font-size: 1rem; text-align: center;
+                    max-width: 380px; line-height: 1.6; }
 </style>
 </head>
 <body>
+<div id="_devblock">
+  <h2>🔒 Acceso restringido</h2>
+  <p>Las herramientas de desarrollo están deshabilitadas en este simulador.<br>
+  Cierra las DevTools para continuar.</p>
+</div>
+
 <!-- LOGIN SCREEN -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
@@ -604,6 +729,28 @@
   <div class="expires">Válido durante la semana actual</div>
 </div>
 
+
+
+<!-- SELECTOR DE MODALIDAD AUTO / MOTO -->
+<div class="mode-overlay" id="modeOverlay">
+  <div class="mode-box">
+    <h2>¿Qué examen vas a practicar?</h2>
+    <p>El simulador ahora trabaja con dos rutas separadas: automóvil y motocicleta. Tu progreso se guarda independiente para cada modalidad.</p>
+    <div class="mode-grid">
+      <button class="mode-card auto" onclick="setExamMode('auto')">
+        <div class="ico">🚗</div>
+        <h3>Examen Auto</h3>
+        <span>Clase B · Automóvil. Señales, prioridades, maniobras, documentación, seguridad vial y vehículo liviano.</span>
+      </button>
+      <button class="mode-card moto" onclick="setExamMode('moto')">
+        <div class="ico">🏍️</div>
+        <h3>Examen Moto</h3>
+        <span>Clase A · Motocicleta. Equipo de protección, estabilidad, frenado, visibilidad, posición en carril y riesgos específicos.</span>
+      </button>
+    </div>
+    <div class="mode-note">Podés cambiar de modalidad cuando quieras desde el menú. El avance de Auto y Moto se guarda por separado.</div>
+  </div>
+</div>
 
 <!-- Login screen removed - handled by new login overlay -->
 <div id="loginScreen" style="display:none;"></div>
@@ -658,16 +805,16 @@
        HERO / ENCABEZADO
   ============================================================ -->
   <section class="card hero">
-    <div class="eyebrow">🇨🇷 COSEVI · Examen Teórico de Licencia · Costa Rica</div>
+    <div class="eyebrow">🇨🇷 COSEVI · Examen Teórico Auto y Moto · Costa Rica</div>
+    <div class="exam-mode-pill" id="examModeHero">Selecciona examen</div>
     <div style="margin:12px 0 10px; padding:13px 16px; border-radius:16px; background:linear-gradient(135deg,rgba(249,115,22,.18),rgba(239,68,68,.12)); border:1px solid rgba(249,115,22,.4); font-size:.95rem; line-height:1.55;">
       🎯 <strong style="color:var(--orange)">Entrená aquí antes del examen y aumentá tus probabilidades de aprobar.</strong>
       Practicá las preguntas que más gente falla, detectá tus puntos débiles y llegá al COSEVI con confianza.
     </div>
-    <h1>Aprueba el <span>Examen de Licencia</span> a la primera</h1>
+    <h1>Aprueba el <span>Examen Teórico</span> de Auto o Moto</h1>
     <p class="lead">
-      El 40% de las personas reprueban el examen del COSEVI — casi siempre por los mismos temas.
-      Esta herramienta te los enseña con preguntas reales de práctica, explicaciones claras y un simulacro
-      con cronómetro — para que el día del examen no haya sorpresas.
+      Desde 2026 el examen teórico se separa por modalidad: Clase B para automóvil y Clase A para motocicleta.
+      Esta herramienta te permite practicar por versión, con preguntas ampliadas 2026, progreso, temas y simulacros separados.
     </p>
     <p style="margin-top:10px; font-size:.82rem; color:var(--muted); line-height:1.55;">
       ⚠️ <strong style="color:var(--text)">Este material es de apoyo y no sustituye el manual oficial del COSEVI.</strong>
@@ -675,8 +822,8 @@
     </p>
     <div class="stats">
       <div class="stat">
-        <strong>24</strong>
-        <span>temas disponibles</span>
+        <strong>2026</strong>
+        <span>banco ampliado Auto/Moto</span>
       </div>
       <div class="stat">
         <strong id="globalScore">0</strong>
@@ -808,6 +955,11 @@
         </div>
       </div>
 
+
+      <button class="exam-mode-switch" onclick="showModeSelector()">
+        🔄 Cambiar examen Auto/Moto
+      </button>
+
       <!-- Imprimir resumen -->
       <button onclick="printSummary()"
         style="margin-top:12px;width:100%;padding:11px;border-radius:12px;
@@ -834,7 +986,7 @@
    CONTROL DE ACCESO
 ================================================================ */
 /* ---- CONTROL DE ACCESO CON CLAVE DINÁMICA ---- */
-const DEFAULT_PASS = "LICENCIA2026";
+const DEFAULT_PASS = _ac ? _ac() : "ACCESS_DENIED";
 function getPass() {
   try { return localStorage.getItem("sbm_lic_pass") || DEFAULT_PASS; }
   catch(e) { return DEFAULT_PASS; }
@@ -1692,6 +1844,31 @@ const questionsByTopic = {
   nq.forEach(item => { if (questionsByTopic[item.t]) questionsByTopic[item.t].push(item.q); });
 })();
 
+
+/* Preguntas específicas para nueva modalidad de motocicleta */
+(function addMotoSpecificQuestions(){
+  const motoQs = {
+    motoequipo: [
+      { question:"¿Cuál es el elemento de protección más importante para un motociclista?", options:["Guantes deportivos","Casco certificado y abrochado","Zapatos livianos"], answer:1, explanation:"El casco certificado y bien abrochado reduce el riesgo de lesiones graves en la cabeza; debe usarlo conductor y pasajero." },
+      { question:"¿Qué debe hacer un motociclista para ser más visible?", options:["Circular sin luces para ahorrar batería","Usar luces, ropa reflectiva y evitar puntos ciegos","Pegar la moto al borde derecho siempre"], answer:1, explanation:"La visibilidad es vital: luces encendidas, elementos reflectivos y no permanecer en puntos ciegos de otros vehículos." },
+      { question:"¿Qué revisión básica debe hacerse antes de conducir una motocicleta?", options:["Solo revisar combustible","Frenos, llantas, luces, espejos y cadena","Únicamente limpiar el casco"], answer:1, explanation:"Antes de salir se revisan sistemas esenciales: frenos, llantas, luces, espejos, cadena y estado general." },
+      { question:"¿Cómo debe viajar el acompañante en motocicleta?", options:["Sin casco si el trayecto es corto","Con casco, en el asiento destinado y sujetándose correctamente","De pie si la moto va despacio"], answer:1, explanation:"El acompañante debe ir protegido, sentado correctamente y sujetarse para no afectar la estabilidad de la moto." },
+      { question:"¿Qué riesgo tiene permanecer en el punto ciego de un vehículo grande?", options:["Ninguno, porque el conductor siempre ve la moto","Que el conductor no vea al motociclista y realice una maniobra peligrosa","Solo aumenta el consumo de combustible"], answer:1, explanation:"Los vehículos grandes tienen puntos ciegos amplios; el motociclista debe evitar permanecer ahí." }
+    ],
+    motofrenado: [
+      { question:"¿Cuál es la forma correcta de frenar en motocicleta?", options:["Solo usar el freno trasero","Combinar freno delantero y trasero de forma progresiva","Frenar siempre dentro de la curva"], answer:1, explanation:"El frenado seguro usa ambos frenos de manera progresiva para mantener control y reducir distancia." },
+      { question:"Antes de entrar a una curva en moto, lo correcto es:", options:["Acelerar para pasar rápido","Reducir velocidad antes de inclinar la moto","Frenar fuerte en plena curva"], answer:1, explanation:"La velocidad se controla antes de la curva; frenar fuerte dentro de la curva puede causar pérdida de estabilidad." },
+      { question:"¿Hacia dónde debe mirar el motociclista al tomar una curva?", options:["Al obstáculo que quiere evitar","Hacia la salida de la curva","Directamente al suelo"], answer:1, explanation:"La mirada guía la trayectoria; mirar hacia la salida ayuda a mantener la línea correcta." },
+      { question:"En lluvia o superficie resbalosa, el motociclista debe:", options:["Inclinar más la moto para ganar agarre","Reducir velocidad y evitar maniobras bruscas","Frenar solo con el freno delantero"], answer:1, explanation:"La lluvia reduce adherencia; se debe conducir suave, con menos velocidad y evitando movimientos bruscos." },
+      { question:"¿Qué ocurre si se bloquea una rueda en una frenada de moto?", options:["La moto se vuelve más estable","Puede perder estabilidad y control","Se activa automáticamente la bocina"], answer:1, explanation:"El bloqueo de rueda puede provocar derrape o caída; por eso se frena progresivamente." }
+    ]
+  };
+  Object.entries(motoQs).forEach(([topic, qs]) => {
+    if (!questionsByTopic[topic]) questionsByTopic[topic] = [];
+    questionsByTopic[topic].push(...qs);
+  });
+})();
+
 /* ================================================================
    CONTENIDO DE ESTUDIO — TEMAS NUEVOS
 ================================================================ */
@@ -1967,6 +2144,36 @@ Object.assign(studyContent, {
     ],
     highlight: "⚠️ 4 grupos OMS: <strong>Exposición → Probabilidad → Gravedad → Atención</strong>. Cuando coinciden varios factores, el riesgo aumenta de forma <strong>exponencial</strong>. La fatiga, alcohol y velocidad son los 3 principales desencadenantes."
   }
+  ,
+  motoequipo: {
+    title: "Equipo y Seguridad en Motocicleta",
+    accent: "#fb923c",
+    icon: "🪖",
+    summary: [
+      "El casco certificado y correctamente abrochado es el elemento de protección más importante para el motociclista y su acompañante.",
+      "La ropa reflectiva, guantes, chaqueta, pantalón resistente y calzado cerrado reducen lesiones y aumentan la visibilidad.",
+      "El motociclista debe hacerse visible: luces encendidas, posición correcta en el carril y evitar permanecer en puntos ciegos.",
+      "El pasajero debe usar casco, ir en el asiento destinado para acompañante y sujetarse correctamente.",
+      "En lluvia, grava, aceite o pintura vial mojada se reduce drásticamente la adherencia; se debe bajar velocidad y evitar maniobras bruscas.",
+      "La motocicleta debe revisarse antes de salir: frenos, llantas, luces, cadena, espejos y nivel de combustible."
+    ],
+    highlight: "🏍️ Clave para moto: <strong>casco certificado, visibilidad y control</strong>. El motociclista debe ocupar su carril y anticipar que otros conductores podrían no verlo."
+  },
+  motofrenado: {
+    title: "Frenado, Curvas y Estabilidad en Moto",
+    accent: "#f43f5e",
+    icon: "🏍️",
+    summary: [
+      "El frenado seguro combina freno delantero y trasero de forma progresiva, evitando bloquear las ruedas.",
+      "El freno delantero aporta gran parte de la capacidad de frenado, pero debe aplicarse con suavidad y control.",
+      "Antes de entrar a una curva se reduce la velocidad; dentro de la curva se evita frenar fuerte o acelerar bruscamente.",
+      "La mirada guía la trayectoria: se debe mirar hacia la salida de la curva, no al obstáculo.",
+      "La estabilidad depende de velocidad adecuada, postura, estado de llantas y superficie de la vía.",
+      "En superficies resbalosas se debe mantener la moto lo más vertical posible y evitar cambios bruscos de dirección."
+    ],
+    highlight: "🛑 En moto: <strong>frenar antes de la curva</strong>, mirar hacia la salida y evitar movimientos bruscos sobre superficies resbalosas."
+  }
+
 });
 
 /* Etiquetas y colores por tema */
@@ -2003,6 +2210,10 @@ const topicMeta = {
   mandos:       { label:"Mandos y Controles del Vehículo",  accent:"#84cc16", icon:"🎛️" },
   proteccion:   { label:"Sistemas de Protección Pasiva",    accent:"#c084fc", icon:"🛡️" },
   riesgos:      { label:"Factores de Riesgo (OMS)",         accent:"#fb923c", icon:"⚠️" }
+  ,
+  motoequipo:   { label:"Equipo y Seguridad en Moto",      accent:"#fb923c", icon:"🪖" },
+  motofrenado:  { label:"Frenado, Curvas y Estabilidad Moto", accent:"#f43f5e", icon:"🏍️" }
+
 };
 
 /* Etiquetas de peligro en el examen — disparan urgencia */
@@ -2229,6 +2440,140 @@ const state = {
   diagResults: []
 };
 
+
+/* ================================================================
+   MODO DE EXAMEN: AUTO / MOTO
+================================================================ */
+const EXAM_MODES = {
+  auto: { label:"🚗 Examen Auto · Clase B", short:"Auto", color:"#38bdf8" },
+  moto: { label:"🏍️ Examen Moto · Clase A", short:"Moto", color:"#f97316" }
+};
+
+const GENERAL_TOPICS = [
+  "senales","velocidad","prioridad","alcohol","luces","distancias","accidentes",
+  "infracciones","senalh","documentos","transporte","defensiva","medioambiente",
+  "educacionvial","conceptos","leyes","clima","carriles","semaforos",
+  "trilogia","conductores","puntosdet","dam","riesgos"
+];
+
+const AUTO_TOPICS = [
+  ...GENERAL_TOPICS,
+  "mecanica","vehiculos","maniobras","carga","frenos","mandos","proteccion"
+];
+
+const MOTO_TOPICS = [
+  ...GENERAL_TOPICS,
+  "motociclistas","motoequipo","motofrenado","mecanica","frenos","mandos","proteccion"
+];
+
+let currentExamMode = localStorage.getItem("sim_lic_exam_mode") || "";
+
+function getActiveTopicKeys() {
+  const raw = currentExamMode === "moto" ? MOTO_TOPICS : AUTO_TOPICS;
+  return raw.filter(k => topicMeta[k] && questionsByTopic[k]);
+}
+
+function getActiveTopicEntries() {
+  return getActiveTopicKeys().map(k => [k, topicMeta[k]]);
+}
+
+function getActiveStudyEntries() {
+  return getActiveTopicKeys().filter(k => studyContent[k]).map(k => [k, studyContent[k]]);
+}
+
+function getActiveQuestionEntries() {
+  return getActiveTopicKeys().filter(k => questionsByTopic[k]).map(k => [k, questionsByTopic[k]]);
+}
+
+function getModeStorageKey(mode) {
+  return "sim_lic_progress_" + (mode || "auto");
+}
+
+function makeFreshTopicStats() {
+  return Object.fromEntries(Object.keys(topicMeta).map(k => [k, { answered: 0, correct: 0 }]));
+}
+
+function saveModeProgress() {
+  if (!currentExamMode) return;
+  try {
+    localStorage.setItem(getModeStorageKey(currentExamMode), JSON.stringify({
+      score: state.score,
+      answered: state.answered,
+      topicStats: state.topicStats
+    }));
+  } catch(e) {}
+}
+
+function loadModeProgress(mode) {
+  try {
+    const raw = localStorage.getItem(getModeStorageKey(mode));
+    const data = raw ? JSON.parse(raw) : null;
+    state.score = data?.score || 0;
+    state.answered = data?.answered || 0;
+    state.topicStats = makeFreshTopicStats();
+    if (data?.topicStats) {
+      Object.keys(data.topicStats).forEach(k => {
+        if (state.topicStats[k]) state.topicStats[k] = data.topicStats[k];
+      });
+    }
+  } catch(e) {
+    state.score = 0;
+    state.answered = 0;
+    state.topicStats = makeFreshTopicStats();
+  }
+
+  // limpiar prácticas activas al cambiar de modalidad
+  state.practiceTopic = null;
+  state.practiceQueue = [];
+  state.mockQuestions = [];
+  state.mockFinished = false;
+  state.currentStudyTopic = null;
+  if (state.mockTimer) { clearInterval(state.mockTimer); state.mockTimer = null; }
+  if (state.intensivoTimer) { clearInterval(state.intensivoTimer); state.intensivoTimer = null; }
+}
+
+function updateModeLabels() {
+  const mode = EXAM_MODES[currentExamMode];
+  const hero = document.getElementById("examModeHero");
+  if (hero && mode) {
+    hero.textContent = mode.label + " · Progreso separado";
+    hero.style.color = mode.color;
+    hero.style.borderColor = mode.color + "66";
+    hero.style.background = mode.color + "16";
+  }
+}
+
+function showModeSelector(force=false) {
+  const overlay = document.getElementById("modeOverlay");
+  if (!overlay) return;
+  if (force || !currentExamMode) overlay.classList.add("show");
+  else overlay.classList.add("show");
+}
+
+window.showModeSelector = showModeSelector;
+
+window.setExamMode = function(mode) {
+  if (!EXAM_MODES[mode]) return;
+  saveModeProgress();
+  currentExamMode = mode;
+  localStorage.setItem("sim_lic_exam_mode", mode);
+  loadModeProgress(mode);
+  const overlay = document.getElementById("modeOverlay");
+  if (overlay) overlay.classList.remove("show");
+  updateModeLabels();
+  render();
+  updateGlobalStats();
+};
+
+function ensureExamModeSelected() {
+  if (!currentExamMode) {
+    showModeSelector(true);
+  } else {
+    loadModeProgress(currentExamMode);
+    updateModeLabels();
+  }
+}
+
 const app        = document.getElementById("app");
 const navButtons = document.querySelectorAll(".nav-btn");
 
@@ -2281,11 +2626,11 @@ navButtons.forEach(btn => {
 ================================================================ */
 function renderHome() {
   const tip = tips[Math.floor(Math.random() * tips.length)];
-  const totalQ = Object.values(questionsByTopic).reduce((s, arr) => s + arr.length, 0);
+  const totalQ = getActiveQuestionEntries().reduce((s, [, arr]) => s + arr.length, 0);
   return `
     <div class="section-title">
-      <h2>Inicio</h2>
-      <span class="badge">Listo para practicar</span>
+      <h2>Inicio · ${EXAM_MODES[currentExamMode]?.short || 'Selecciona examen'}</h2>
+      <span class="badge">${EXAM_MODES[currentExamMode]?.label || 'Modo no seleccionado'}</span>
     </div>
     <div class="row-3">
       <div class="mini">
@@ -2293,7 +2638,7 @@ function renderHome() {
         <span>preguntas en el banco</span>
       </div>
       <div class="mini">
-        <strong>${Object.keys(topicMeta).length}</strong>
+        <strong>${getActiveTopicKeys().length}</strong>
         <span>temas disponibles</span>
       </div>
       <div class="mini">
@@ -2339,7 +2684,7 @@ function renderStudy() {
   const selected = state.currentStudyTopic ? studyContent[state.currentStudyTopic] : null;
   const meta     = state.currentStudyTopic ? topicMeta[state.currentStudyTopic] : null;
 
-  const topicCards = Object.entries(studyContent).map(([key, topic]) => {
+  const topicCards = getActiveStudyEntries().map(([key, topic]) => {
     const m = topicMeta[key];
     const qCount = questionsByTopic[key].length;
     const badge = examBadges[key];
@@ -2410,7 +2755,7 @@ function renderStudy() {
 ================================================================ */
 function renderPractice() {
   if (!state.practiceTopic) {
-    const topicCards = Object.entries(topicMeta).map(([key, m]) => {
+    const topicCards = getActiveTopicEntries().map(([key, m]) => {
       const badge = examBadges[key];
       const badgeHtml = badge
         ? `<div style="font-size:.72rem; font-weight:700; color:${badge.color}; margin-bottom:5px;">${badge.label}</div>`
@@ -2425,7 +2770,7 @@ function renderPractice() {
     `}).join("");
     return `
       <div class="section-title">
-        <h2>Practicar</h2>
+        <h2>Practicar · ${EXAM_MODES[currentExamMode]?.short}</h2>
         <span class="badge">Elige un tema</span>
       </div>
       <div class="topic-grid">${topicCards}</div>
@@ -2495,11 +2840,11 @@ function renderPractice() {
 ================================================================ */
 function renderMock() {
   if (state.mockQuestions.length === 0) {
-    const totalPool = Object.values(questionsByTopic).reduce((s, a) => s + a.length, 0);
+    const totalPool = getActiveQuestionEntries().reduce((s, [, a]) => s + a.length, 0);
     return `
       <div class="section-title">
-        <h2>🏆 Simulacro</h2>
-        <span class="badge">Tipo examen COSEVI</span>
+        <h2>🏆 Simulacro · ${EXAM_MODES[currentExamMode]?.short}</h2>
+        <span class="badge">Tipo examen COSEVI actualizado</span>
       </div>
       <div class="box">
         <h3>¿Estás listo para el examen? Ponete a prueba ahora</h3>
@@ -2638,7 +2983,7 @@ function renderProgress() {
     ? Math.round((state.score / state.answered) * 100)
     : 0;
 
-  const bars = Object.entries(state.topicStats).map(([key, stats]) => {
+  const bars = getActiveTopicKeys().map(key => { const stats = state.topicStats[key] || {answered:0, correct:0};
     const m   = topicMeta[key];
     const pct = stats.answered ? Math.round((stats.correct / stats.answered) * 100) : 0;
     const barColor = pct >= 75 ? "var(--green)" : pct >= 50 ? "var(--yellow)" : pct > 0 ? "var(--red)" : "var(--muted)";
@@ -2655,7 +3000,7 @@ function renderProgress() {
     `;
   }).join("");
 
-  const weakest = Object.entries(state.topicStats)
+  const weakest = getActiveTopicKeys().map(k => [k, state.topicStats[k] || {answered:0, correct:0}])
     .filter(([, s]) => s.answered > 0)
     .sort((a, b) => {
       const pa = a[1].answered ? a[1].correct / a[1].answered : 1;
@@ -2716,7 +3061,7 @@ function renderProgress() {
 ================================================================ */
 function renderIntensivo() {
   // Temas críticos del examen (los que más caen)
-  const criticalTopics = ["alcohol","velocidad","senales","prioridad","distancias","semaforos","infracciones","leyes","clima","accidentes"];
+  const criticalTopics = currentExamMode === "moto" ? ["alcohol","velocidad","senales","prioridad","distancias","semaforos","infracciones","leyes","clima","accidentes","motociclistas","motoequipo","motofrenado"] : ["alcohol","velocidad","senales","prioridad","distancias","semaforos","infracciones","leyes","clima","accidentes","vehiculos","maniobras","frenos"];
 
   if (!state.intensivoActive) {
     return `
@@ -3534,6 +3879,7 @@ window.doAnswerPractice = function(idx) {
     state.score += 1;
     state.topicStats[state.practiceTopic].correct += 1;
   }
+  saveModeProgress();
   render();
 };
 
@@ -3558,7 +3904,7 @@ window.doResetPractice = function() {
 ================================================================ */
 function buildMock() {
   const pool = [];
-  Object.entries(questionsByTopic).forEach(([topic, arr]) => {
+  getActiveQuestionEntries().forEach(([topic, arr]) => {
     arr.forEach(q => pool.push({ ...q, _topic: topic }));
   });
   state.mockQuestions   = shuffle(pool).slice(0, 20);
@@ -3608,6 +3954,7 @@ window.doAnswerMock = function(idx) {
     state.score     += 1;
     state.topicStats[q._topic].correct += 1;
   }
+  saveModeProgress();
   render();
 };
 
@@ -3640,13 +3987,14 @@ function resetProgress() {
   Object.keys(state.topicStats).forEach(k => {
     state.topicStats[k] = { answered: 0, correct: 0 };
   });
+  saveModeProgress();
 }
 
 /* ================================================================
    LÓGICA: MODO INTENSIVO
 ================================================================ */
 window.startIntensivo = function() {
-  const criticalTopics = ["alcohol","velocidad","senales","prioridad","distancias","semaforos","infracciones","leyes","clima","accidentes"];
+  const criticalTopics = currentExamMode === "moto" ? ["alcohol","velocidad","senales","prioridad","distancias","semaforos","infracciones","leyes","clima","accidentes","motociclistas","motoequipo","motofrenado"] : ["alcohol","velocidad","senales","prioridad","distancias","semaforos","infracciones","leyes","clima","accidentes","vehiculos","maniobras","frenos"];
   const pool = [];
   criticalTopics.forEach(topic => {
     if (questionsByTopic[topic]) {
@@ -3688,6 +4036,7 @@ window.doAnswerIntensivo = function(idx) {
     state.score += 1;
     state.topicStats[q._topic].correct += 1;
   }
+  saveModeProgress();
   render();
 };
 
@@ -4217,6 +4566,137 @@ window.printSummary = function() {
   });
 })();
 
+
+/* ================================================================
+   ACTUALIZACIÓN 2026 — BANCO AMPLIADO AUTO / MOTO
+   Basado en los manuales 2026 cargados por Lilly.
+================================================================ */
+(function addBancoActualizado2026() {
+  const banco2026 = {
+    conceptos: [
+      { question:"Según el manual, ¿qué significa conducir?", options:["Mover un vehículo sin importar el entorno","Manejar un vehículo por la vía pública reconociendo que la seguridad vial es lo primero","Saber acelerar y frenar correctamente","Trasladarse únicamente en automóvil"], answer:1, explanation:"Conducir implica manejar un vehículo por la vía pública, considerando la seguridad vial y la convivencia con todos los usuarios." },
+      { question:"¿Qué idea resume mejor la convivencia vial?", options:["Cada conductor debe defender su espacio aunque incomode a otros","La vía pública es compartida y exige tolerancia, respeto mutuo y respeto por la vida","Solo los vehículos automotores tienen prioridad","Los peatones deben adaptarse siempre a los vehículos"], answer:1, explanation:"El manual destaca que todos los usuarios comparten el sistema vial y deben actuar con tolerancia, convivencia y respeto hacia la vida." },
+      { question:"¿Quién es legalmente responsable de lo que ocurra con el vehículo mientras lo conduce?", options:["El dueño registral aunque no maneje","La persona que tiene el control operativo del vehículo","El pasajero principal","El oficial de tránsito"], answer:1, explanation:"El conductor es quien tiene el control operativo del vehículo y responde por su conducción e infracciones." },
+      { question:"¿Cuál persona se considera conductor no acreditado?", options:["Quien renovó su licencia hace más de tres años","Quien conduce sin estar inscrito o sin licencia correspondiente al vehículo","Quien maneja todos los días por trabajo","Quien tiene licencia B1 vigente"], answer:1, explanation:"El conductor no acreditado es quien no está debidamente inscrito o no cuenta con la licencia apropiada para el vehículo." },
+      { question:"¿Qué caracteriza al conductor novato?", options:["Conduce transporte público","Tiene licencia por primera vez y no supera tres años de haberla obtenido","Renueva licencia con más de tres años","Tiene licencia profesional"], answer:1, explanation:"El conductor novato es quien obtiene su licencia por primera vez y no supera los tres años de haberla obtenido." },
+      { question:"¿Qué caracteriza al conductor profesional?", options:["Conduce solo los fines de semana","Su actividad laboral principal es conducir vehículos de transporte de personas o mercancías","Tiene menos de tres años de licencia","Usa bicicleta diariamente"], answer:1, explanation:"Es profesional quien trabaja principalmente conduciendo vehículos dedicados al transporte de personas o mercancías." }
+    ],
+
+    trilogia: [
+      { question:"¿Cuáles son los componentes de la trilogía vial?", options:["Vehículo, combustible y velocidad","Ser humano, vehículo, vía y entorno","Semáforo, señal y oficial","Motor, frenos y luces"], answer:1, explanation:"La trilogía vial está formada por el ser humano, el vehículo y la vía con su entorno." },
+      { question:"Dentro de la trilogía vial, ¿qué elemento suele considerarse más determinante?", options:["El color del vehículo","El ser humano y sus decisiones","La marca del vehículo","El clima únicamente"], answer:1, explanation:"El factor humano es decisivo porque la conducción depende de sus decisiones, estado físico y conducta." },
+      { question:"¿Qué pasa si falla uno de los elementos de la trilogía vial?", options:["No tiene importancia si el conductor es experto","Puede afectar la seguridad y provocar un hecho que atente contra la seguridad vial","Solo afecta la comodidad","Solo genera multas leves"], answer:1, explanation:"La trilogía vial funciona como sistema: una falla en el ser humano, vehículo o vía puede generar riesgo." },
+      { question:"¿Qué busca el enfoque de Sistema Seguro?", options:["Eliminar todos los vehículos lentos","Reconocer que las personas cometen errores y diseñar el sistema para evitar consecuencias fatales","Aumentar la velocidad promedio","Hacer que solo el conductor sea responsable"], answer:1, explanation:"El Sistema Seguro reconoce la vulnerabilidad humana y busca que los errores no terminen en lesiones graves o fatales." },
+      { question:"¿Cuáles son acciones del Sistema Seguro?", options:["Más velocidad y menos señalización","Infraestructura vial segura, vehículos seguros, usuarios seguros, mejores políticas y mejor asistencia a víctimas","Solo multas más altas","Eliminar el transporte público"], answer:1, explanation:"El manual menciona cinco acciones: infraestructura segura, vehículos seguros, usuarios seguros, políticas de seguridad vial y asistencia a víctimas." }
+    ],
+
+    riesgos: [
+      { question:"¿Qué son factores de riesgo en la vía?", options:["Elementos que reducen siempre la velocidad","Circunstancias, condiciones o acciones que aumentan la posibilidad de un accidente","Únicamente defectos del vehículo","Solo errores del peatón"], answer:1, explanation:"Son condiciones, circunstancias o conductas que incrementan la posibilidad de sufrir un siniestro vial." },
+      { question:"¿Cuál de estos es un factor asociado a la vía?", options:["Carreteras con baches, mala señalización o ausencia de aceras","Color del casco","Marca del teléfono","Edad del pasajero"], answer:0, explanation:"La infraestructura deficiente aumenta la exposición al riesgo: baches, falta de aceras, ciclovías o señalización." },
+      { question:"Según la clasificación OMS, ¿qué grupo se relaciona con no usar cinturón o casco?", options:["Exposición al riesgo","Gravedad de las lesiones","Color del vehículo","Tipo de combustible"], answer:1, explanation:"No usar dispositivos de seguridad, como casco o cinturón, agrava la severidad de las lesiones." },
+      { question:"¿Cuál de estos factores aumenta la posibilidad de que ocurra un accidente?", options:["Conducir con fatiga, alcohol, distracción o exceso de velocidad","Usar cinturón correctamente","Revisar espejos","Mantener distancia"], answer:0, explanation:"La fatiga, el alcohol, la distracción y el exceso de velocidad son detonantes directos de accidentes." },
+      { question:"¿Qué condición aumenta la exposición al riesgo?", options:["Vías con aceras, ciclovías y señalización clara","Ausencia de infraestructura segura y alta densidad de tránsito","Vehículo con mantenimiento correcto","Conducción atenta"], answer:1, explanation:"La falta de infraestructura segura, el volumen de tránsito y el tipo de vía aumentan la exposición al riesgo." },
+      { question:"¿Qué significa acumulación de factores de riesgo?", options:["Que un solo riesgo desaparece al aparecer otro","Que varios riesgos juntos aumentan la probabilidad de consecuencias graves","Que el conductor ya no debe actuar","Que solo afecta a motociclistas"], answer:1, explanation:"Cuando se combinan varios riesgos, la posibilidad de accidente y lesiones graves aumenta considerablemente." }
+    ],
+
+    educacionvial: [
+      { question:"¿Qué debe hacer un conductor ante un peatón que ya inició el cruce?", options:["Acelerar antes de que llegue","Detenerse totalmente y permitir el paso","Tocar bocina para que retroceda","Pasar si no hay semáforo"], answer:1, explanation:"El peatón tiene prioridad al iniciar el cruce, especialmente en pasos peatonales o zonas protegidas." },
+      { question:"¿Qué velocidad máxima corresponde en zona escolar señalizada?", options:["25 km/h","40 km/h","60 km/h","80 km/h"], answer:0, explanation:"En zona escolar señalizada se debe circular a máximo 25 km/h y extremar la atención." },
+      { question:"¿Por qué la movilidad sostenible reduce riesgos?", options:["Porque elimina todos los accidentes","Porque promueve formas de movilidad con menor exposición, menos congestión y mayor seguridad colectiva","Porque permite conducir más rápido","Porque evita el uso de señales"], answer:1, explanation:"La movilidad sostenible busca desplazamientos seguros, menor impacto ambiental y menor exposición al riesgo." },
+      { question:"¿Qué debe hacer el conductor frente a ciclistas y transporte no motorizado?", options:["Ignorarlos si no van rápido","Respetar su espacio y anticipar sus movimientos","Obligarlos a circular por aceras","Adelantarlos sin distancia"], answer:1, explanation:"La vía se comparte con ciclistas y usuarios no motorizados; se requiere respeto, distancia y anticipación." },
+      { question:"¿Qué práctica reduce riesgos y emisiones?", options:["Aceleraciones y frenadas bruscas","Conducción suave, responsable y anticipada","Mantener el motor encendido sin avanzar","Usar la bocina constantemente"], answer:1, explanation:"La conducción eficiente y responsable reduce consumo, emisiones y riesgo por pérdida de control." }
+    ],
+
+    defensiva: [
+      { question:"¿Qué significa conducir defensivamente?", options:["Conducir desconfiando y compitiendo","Anticipar riesgos y actuar para evitar accidentes aunque otros cometan errores","Circular siempre por el carril izquierdo","Frenar fuerte ante todo peligro"], answer:1, explanation:"La conducción defensiva consiste en anticipar riesgos, observar el entorno y actuar preventivamente." },
+      { question:"Antes de cambiar de carril, ¿qué secuencia es más segura?", options:["Acelerar y cambiar de inmediato","Revisar espejo, señalizar, verificar punto ciego y maniobrar si es seguro","Tocar bocina y cruzar","Mirar solo el espejo central"], answer:1, explanation:"Antes de maniobrar se revisan espejos, se señaliza y se verifica el punto ciego." },
+      { question:"¿Por qué es importante mantener distancia de seguridad?", options:["Para ocupar más espacio","Para tener tiempo de reacción y frenado ante imprevistos","Para evitar que otros adelanten","Solo por comodidad"], answer:1, explanation:"La distancia de seguridad permite reaccionar y detenerse sin colisionar si el vehículo delantero frena." },
+      { question:"¿Qué actitud corresponde a un conductor defensivo?", options:["Imponerse a otros usuarios","Mantener paciencia, observar y anticipar errores ajenos","Acelerar cuando alguien se equivoca","Usar luces altas para presionar"], answer:1, explanation:"La conducción defensiva requiere prudencia, paciencia y anticipación." },
+      { question:"¿Qué debe hacer al acercarse a una intersección con poca visibilidad?", options:["Acelerar para cruzar rápido","Reducir velocidad, observar y estar listo para ceder","No mirar a los lados","Confiar únicamente en la prioridad propia"], answer:1, explanation:"En intersecciones de baja visibilidad se reduce velocidad y se observa antes de avanzar." }
+    ],
+
+    documentos: [
+      { question:"¿Qué documento identifica externamente un vehículo?", options:["El recibo de combustible","La placa de matrícula","El manual de usuario","El certificado de lavado"], answer:1, explanation:"La placa de matrícula identifica externamente al vehículo ante el Registro Nacional." },
+      { question:"¿Qué es la licencia de conducir?", options:["Un permiso privado del dueño del vehículo","El permiso otorgado por el Estado para conducir un vehículo durante un período determinado","Una factura de compra","Un seguro voluntario"], answer:1, explanation:"La licencia es el permiso estatal que faculta a una persona para conducir un vehículo determinado." },
+      { question:"¿Qué es la Dirección Electrónica Vial (DEV)?", options:["Una ruta en Waze","La dirección electrónica para notificaciones relacionadas con la Ley de Tránsito","El correo del taller","Una aplicación privada"], answer:1, explanation:"La DEV sirve para recibir notificaciones oficiales relacionadas con actuaciones de tránsito." },
+      { question:"¿Qué verifica la Inspección Técnica Vehicular?", options:["Solo color del vehículo","Condiciones técnico-mecánicas y control de emisiones","Únicamente estado de pintura","Precio de mercado"], answer:1, explanation:"La IVE revisa condiciones mecánicas, seguridad y emisiones del vehículo." },
+      { question:"¿Qué es el derecho de circulación?", options:["El derecho obtenido luego de pagar los rubros establecidos por ley para circular","Un permiso para estacionar donde sea","Una garantía del concesionario","Una boleta de infracción"], answer:0, explanation:"El derecho de circulación se obtiene al pagar los rubros legales para que el vehículo pueda circular." }
+    ],
+
+    vehiculos: [
+      { question:"¿Qué diferencia hay entre seguridad activa y pasiva?", options:["La activa busca evitar accidentes; la pasiva protege o reduce lesiones cuando ocurre el accidente","La activa es solo para motos y la pasiva para autos","Son exactamente iguales","La pasiva evita todos los accidentes"], answer:0, explanation:"La seguridad activa previene accidentes; la pasiva protege a los ocupantes cuando el accidente ya ocurrió." },
+      { question:"¿Cuál es un ejemplo de seguridad activa?", options:["Airbag","Sistema de frenos en buen estado","Zonas de deformación","Cinturón ya colocado"], answer:1, explanation:"Los frenos forman parte de la seguridad activa porque ayudan a evitar el accidente." },
+      { question:"¿Cuál es un ejemplo de seguridad pasiva?", options:["ABS","Cinturón de seguridad y airbag","Direccionales","Luces altas"], answer:1, explanation:"El cinturón y el airbag reducen daños cuando ocurre una colisión." },
+      { question:"¿Qué indica una luz de aceite encendida con el motor funcionando?", options:["Que el vehículo consume menos combustible","Advertencia crítica: se debe detener el motor para evitar daños","Que las luces están activadas","Que el tanque está lleno"], answer:1, explanation:"Una luz de aceite encendida puede indicar falta de presión o lubricación; se debe detener el motor." },
+      { question:"¿Qué debe revisar en el círculo de seguridad antes de conducir?", options:["Solo la radio","Llantas, luces, líquidos, frenos y condiciones visibles del vehículo","Solo el aire acondicionado","La decoración interna"], answer:1, explanation:"La revisión preventiva busca detectar condiciones evidentes que puedan comprometer la seguridad." }
+    ],
+
+    maniobras: [
+      { question:"Al incorporarse a una autopista, ¿para qué sirve el carril de aceleración?", options:["Para detenerse a esperar indefinidamente","Para alcanzar una velocidad compatible con el flujo antes de ingresar","Para adelantar por la derecha","Para estacionar"], answer:1, explanation:"El carril de aceleración permite incorporarse de forma progresiva y segura al flujo vehicular." },
+      { question:"Al salir de una autopista, ¿cuándo debe reducir la velocidad?", options:["Antes de señalizar","Dentro del carril de desaceleración o salida, no bruscamente en el carril principal","En medio del carril rápido","Después de detenerse"], answer:1, explanation:"Se debe señalizar y reducir velocidad gradualmente en el carril de salida o desaceleración." },
+      { question:"En una rotonda, ¿quién tiene prioridad?", options:["Quien quiere entrar","Quien ya circula dentro de la rotonda","El vehículo más grande","Quien toca bocina"], answer:1, explanation:"El vehículo que ya está dentro de la rotonda tiene prioridad sobre el que intenta ingresar." },
+      { question:"¿Cuándo está prohibido realizar giro en U?", options:["Cuando hay señal que lo prohíbe, en baja visibilidad o en autopistas","Solo de noche","Solo si hay peatones","Nunca está prohibido"], answer:0, explanation:"El giro en U se prohíbe cuando hay señal, en zonas peligrosas o donde compromete la seguridad." }
+    ],
+
+    motoequipo: [
+      { question:"¿Cuál es el equipo mínimo indispensable para reducir lesiones en motocicleta?", options:["Casco certificado y correctamente abrochado","Gorra y lentes oscuros","Zapatos abiertos","Audífonos"], answer:0, explanation:"El casco certificado y abrochado es la protección principal para conductor y acompañante." },
+      { question:"¿Por qué son útiles los elementos reflectivos en motocicleta?", options:["Porque aumentan la velocidad","Porque ayudan a que otros usuarios vean al motociclista, especialmente de noche o con lluvia","Porque sustituyen las luces","Porque evitan usar casco"], answer:1, explanation:"La visibilidad es vital para el motociclista; los reflectivos ayudan a ser visto." },
+      { question:"¿Qué calzado es más seguro para conducir motocicleta?", options:["Sandalias","Calzado cerrado y firme","Pantuflas","Andar descalzo"], answer:1, explanation:"El calzado cerrado protege el pie y mejora el control de la motocicleta." },
+      { question:"¿Qué debe hacer el pasajero de una motocicleta?", options:["Viajar sin casco si va cerca","Usar casco, sentarse correctamente y sujetarse","Ir de pie para equilibrar","Moverse libremente en curvas"], answer:1, explanation:"El acompañante debe usar casco, ir sentado en el espacio correspondiente y sujetarse para no afectar la estabilidad." },
+      { question:"¿Cuál es una revisión básica antes de salir en moto?", options:["Frenos, llantas, luces, cadena y espejos","Solo combustible","Solo bocina","Solo pintura"], answer:0, explanation:"La motocicleta debe revisarse antes de circular para evitar fallas que comprometan la seguridad." }
+    ],
+
+    motofrenado: [
+      { question:"¿Cómo debe realizarse el frenado seguro en motocicleta?", options:["Solo con el freno trasero","Combinando freno delantero y trasero de forma progresiva","Solo con el freno delantero y de golpe","Apagando el motor"], answer:1, explanation:"El frenado seguro en moto combina ambos frenos progresivamente para evitar bloqueo y pérdida de control." },
+      { question:"¿Cuándo debe reducir velocidad antes de una curva en moto?", options:["Antes de entrar a la curva","A mitad de la curva frenando fuerte","Después de salir","Nunca"], answer:0, explanation:"La velocidad se ajusta antes de entrar a la curva para mantener estabilidad." },
+      { question:"¿Por qué no conviene frenar fuerte dentro de una curva?", options:["Porque puede afectar la estabilidad y provocar caída","Porque aumenta el agarre","Porque mejora la inclinación","Porque no tiene efecto"], answer:0, explanation:"Frenar fuerte en curva puede bloquear ruedas o desestabilizar la moto." },
+      { question:"¿Hacia dónde debe mirar el motociclista en una curva?", options:["Al obstáculo","Hacia la salida de la curva","Al suelo justo frente a la llanta","Al retrovisor únicamente"], answer:1, explanation:"La mirada guía la trayectoria; se debe mirar hacia donde se quiere ir." },
+      { question:"En superficie mojada o con pintura vial húmeda, ¿qué debe hacer el motociclista?", options:["Inclinar más y acelerar","Reducir velocidad y evitar maniobras bruscas","Frenar solo con el delantero","Conducir igual que en seco"], answer:1, explanation:"La adherencia disminuye; se debe conducir suave y con menor velocidad." },
+      { question:"¿Qué ocurre si se bloquea una rueda al frenar en moto?", options:["La moto gana estabilidad","Puede derrapar y perder control","Se detiene mejor automáticamente","No pasa nada"], answer:1, explanation:"El bloqueo puede causar derrape y caída; por eso el frenado debe ser progresivo." }
+    ],
+
+    motociclistas: [
+      { question:"¿Qué compromiso debe asumir el motociclista con su entorno?", options:["Conducir rápido para no atrasar","Manejar con respeto, atención y tolerancia para reducir riesgos","Usar siempre el centro de la acera","Evitar las señales si tiene experiencia"], answer:1, explanation:"El manual de moto enfatiza la responsabilidad, respeto y atención del motociclista ante su entorno." },
+      { question:"¿Debe un motociclista ocupar siempre el borde extremo del carril?", options:["Sí, para dejar espacio a carros","No; debe posicionarse donde sea más visible y seguro, sin ser forzado a compartir carril","Solo si va lento","Solo en autopista"], answer:1, explanation:"La posición segura busca visibilidad, espacio de escape y control; no debe ser forzado a compartir carril." },
+      { question:"¿Qué debe evitar un motociclista cerca de buses o camiones?", options:["Salir rápido del punto ciego y no permanecer oculto","Circular con luces","Mantener distancia","Usar casco"], answer:0, explanation:"Los vehículos grandes tienen puntos ciegos amplios; la moto puede desaparecer de la vista del conductor." },
+      { question:"¿Qué debe hacer un motociclista ante lluvia intensa y baja visibilidad?", options:["Aumentar velocidad","Reducir mucho la velocidad, encender luces y detenerse si no es seguro continuar","Zigzaguear entre vehículos","Frenar fuerte de inmediato"], answer:1, explanation:"La lluvia reduce visibilidad y adherencia; la conducta segura es bajar velocidad y aumentar visibilidad." },
+      { question:"¿Cuál es una conducta riesgosa para motociclistas?", options:["Usar casco certificado","Circular entre filas de vehículos en movimiento","Mantener distancia","Usar luces"], answer:1, explanation:"Circular entre vehículos aumenta el riesgo de contacto lateral, puntos ciegos y maniobras inesperadas." },
+      { question:"¿Cuál es una ventaja de usar ropa clara o reflectiva en moto?", options:["Mejora la visibilidad frente a otros usuarios","Permite conducir sin luces","Sustituye el casco","Reduce el consumo de gasolina"], answer:0, explanation:"Los elementos claros y reflectivos ayudan a que el motociclista sea detectado a tiempo." }
+    ],
+
+    puntosdet: [
+      { question:"¿Qué puede ocurrir al acumular puntos por infracciones?", options:["Nada, solo queda registro","Puede suspenderse la licencia y requerirse reacreditación","Se renueva automáticamente","Se elimina la multa"], answer:1, explanation:"La acumulación de puntos puede causar suspensión y condiciones para recuperar la licencia." },
+      { question:"¿Qué significa reacreditación?", options:["Comprar otra placa","Proceso para obtener nuevamente autorización cuando la licencia perdió vigencia por puntos","Cambiar de vehículo","Pagar combustible"], answer:1, explanation:"La reacreditación permite recuperar la licencia luego de suspensión por puntos, cumpliendo requisitos." },
+      { question:"¿Por qué el sistema de puntos busca corregir conducta?", options:["Porque registra infracciones y puede suspender al conductor reincidente","Porque premia velocidad","Porque elimina el examen práctico","Porque sustituye el marchamo"], answer:0, explanation:"El sistema de puntos funciona como sanción administrativa y mecanismo de corrección." }
+    ],
+
+    clima: [
+      { question:"¿Por qué debe reducirse la velocidad con neblina o lluvia fuerte?", options:["Porque disminuyen visibilidad y adherencia","Porque el motor siempre se apaga","Porque la pintura del vehículo se daña","Porque el aire acondicionado consume más"], answer:0, explanation:"La lluvia y la neblina reducen visibilidad y capacidad de frenado, por eso se baja velocidad." },
+      { question:"¿Qué luces se deben usar con lluvia fuerte o neblina?", options:["Luces bajas y, si corresponde, neblineras","Luces altas siempre","Sin luces para no molestar","Solo luces de emergencia mientras se avanza rápido"], answer:0, explanation:"Las luces bajas ayudan a ver y ser visto; las altas pueden deslumbrar o reflejarse en la neblina." },
+      { question:"¿Qué es el acuaplaning?", options:["Cuando el vehículo pierde contacto con el pavimento por una capa de agua","Cuando se recalienta el motor","Cuando se apaga la radio","Cuando falla la batería"], answer:0, explanation:"El acuaplaning ocurre cuando el neumático pierde contacto efectivo con la vía por acumulación de agua." }
+    ]
+  };
+
+  Object.entries(banco2026).forEach(([topic, qs]) => {
+    if (!questionsByTopic[topic]) questionsByTopic[topic] = [];
+    questionsByTopic[topic].push(...qs);
+  });
+
+  // Refuerzo visual para que el usuario sepa que el banco fue ampliado
+  try {
+    const s = document.createElement("style");
+    s.textContent = `
+      .badge-2026{
+        display:inline-flex;align-items:center;gap:6px;
+        margin-left:8px;padding:4px 9px;border-radius:999px;
+        background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);
+        color:#86efac;font-size:.72rem;font-weight:800;
+      }
+    `;
+    document.head.appendChild(s);
+  } catch(e) {}
+})();
+
 /* ================================================================
    COMPATIBILIDAD CON LLAMADAS GLOBALES DEL HTML ORIGINAL
 ================================================================ */
@@ -4227,6 +4707,7 @@ window.startMock   = window.startMock;
    ARRANQUE
 ================================================================ */
 buildIndex();
+ensureExamModeSelected();
 render();
 
 // ── Recordatorio de estudio ──────────────────────────────────────
@@ -4251,17 +4732,16 @@ render();
 // ACCESS CONTROL · Simulador Licencia CR
 // ══════════════════════════════════════
 
-const ACTIVATION_CODE = "LICENCIA2026"; // clave maestra privada para la dueña
+function _ac(){
+  /* eslint-disable */
+  var _x=[93,88,82,84,95,82,88,80,35,33,35,39],_k=17;
+  return _x.map(function(c){return String.fromCharCode(c^_k)}).join('');
+}
+const ACTIVATION_CODE = _ac();
 let publicCodeTaps = 0;
 let publicCodeTimer = null;
 
-function getWeeklyCode() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
-  const yr = String(now.getFullYear()).slice(-2);
-  return 'COSEVI' + String(week).padStart(2,'0') + yr;
-}
+function getWeeklyCode(){var _t=new Date(),_s=new Date(_t.getFullYear(),0,1),_w=Math.ceil(((_t-_s)/864e5+_s.getDay()+1)/7),_y=String(_t.getFullYear()).slice(-2);return [67,79,83,69,86,73].map(function(c){return String.fromCharCode(c)}).join('')+String(_w).padStart(2,'0')+_y;}
 
 function getAccessToken() {
   return 'week-' + getWeeklyCode();
@@ -4332,6 +4812,88 @@ try {
     localStorage.setItem("sbm_lic_pass", "auto");
   }
 } catch(e) {}
+
+
+/* ================================================================
+   BLOQUE DE SEGURIDAD — NO MODIFICAR
+================================================================ */
+(function _shield() {
+  'use strict';
+
+  /* — Bloqueo de clic derecho — */
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault(); e.stopPropagation(); return false;
+  }, true);
+
+  /* — Bloqueo de atajos de teclado — */
+  document.addEventListener('keydown', function(e) {
+    var k = (e.key || '').toLowerCase();
+    // Ctrl/Cmd + U=fuente, S=guardar, A=seleccionar, C=copiar, P=imprimir
+    if ((e.ctrlKey || e.metaKey) && ['u','s','a','c','p'].indexOf(k) !== -1) {
+      e.preventDefault(); e.stopPropagation(); return false;
+    }
+    // Ctrl+Shift+I / J / C / K = devtools
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c','k'].indexOf(k) !== -1) {
+      e.preventDefault(); e.stopPropagation(); return false;
+    }
+    // F12 = devtools
+    if (e.key === 'F12') {
+      e.preventDefault(); e.stopPropagation(); return false;
+    }
+  }, true);
+
+  /* — Bloqueo de selección y arrastre — */
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA')
+      e.preventDefault();
+  });
+  document.addEventListener('dragstart', function(e) { e.preventDefault(); });
+
+  /* — Bloqueo de copia/corte — */
+  document.addEventListener('copy',  function(e) { e.preventDefault(); });
+  document.addEventListener('cut',   function(e) { e.preventDefault(); });
+
+  /* — Protección de impresión — */
+  window.addEventListener('beforeprint', function() {
+    var _cover = document.createElement('div');
+    _cover.id = '_printblock';
+    _cover.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:999999;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-family:sans-serif;color:#333;text-align:center;padding:40px;';
+    _cover.innerHTML = '<div><div style="font-size:3rem">🔒</div><br>© Simulador Licencia CR<br><span style="font-size:1rem;color:#666">Contenido protegido. Uso personal no transferible.</span></div>';
+    document.body.appendChild(_cover);
+  });
+  window.addEventListener('afterprint', function() {
+    var el = document.getElementById('_printblock');
+    if (el) el.remove();
+  });
+
+  /* — Detección de DevTools (por tamaño de ventana) — */
+  var _devEl = document.getElementById('_devblock');
+  var _devOpen = false;
+  function _checkDevTools() {
+    var _threshold = 160;
+    var _widthDiff  = window.outerWidth  - window.innerWidth;
+    var _heightDiff = window.outerHeight - window.innerHeight;
+    var _detected   = _widthDiff > _threshold || _heightDiff > _threshold;
+    if (_detected && !_devOpen) {
+      _devOpen = true;
+      if (_devEl) _devEl.classList.add('show');
+    } else if (!_detected && _devOpen) {
+      _devOpen = false;
+      if (_devEl) _devEl.classList.remove('show');
+    }
+  }
+  setInterval(_checkDevTools, 800);
+
+  /* — Console warning — */
+  try {
+    var _w = ['%c⚠ ATENCIÓN',
+              'color:#ef4444;font-size:1.4rem;font-weight:bold;'];
+    console.log.apply(console, _w);
+    console.log('%cEste simulador es propiedad privada. Acceder al código fuente o extraer contenido puede constituir una violación de derechos de autor.',
+      'color:#f97316;font-size:.9rem;');
+  } catch(e){}
+
+})();
 
 </script>
 </body>
