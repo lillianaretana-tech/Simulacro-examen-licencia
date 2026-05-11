@@ -515,14 +515,55 @@
 .login-access-btn:hover{border-color:#38bdf8;color:#38bdf8}
 .login-footer{font-size:.68rem;color:#475569;text-align:center;margin-top:16px}
 
+
+.weekly-code-toast{
+  position:fixed;
+  left:50%;
+  bottom:28px;
+  transform:translateX(-50%) translateY(30px);
+  z-index:10000;
+  background:#0a0f1e;
+  border:1px solid rgba(56,189,248,.45);
+  box-shadow:0 14px 45px rgba(0,0,0,.45);
+  border-radius:18px;
+  padding:16px 22px;
+  color:#eef2ff;
+  text-align:center;
+  min-width:260px;
+  opacity:0;
+  pointer-events:none;
+  transition:.25s ease;
+}
+.weekly-code-toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+.weekly-code-toast .small{
+  font-size:.75rem;
+  color:#8896b8;
+  margin-bottom:4px;
+}
+.weekly-code-toast .code{
+  font-family:'Segoe UI',ui-sans-serif,system-ui,sans-serif;
+  font-size:1.55rem;
+  font-weight:900;
+  color:#38bdf8;
+  letter-spacing:.08em;
+}
+.weekly-code-toast .expires{
+  margin-top:5px;
+  font-size:.7rem;
+  color:#64748b;
+}
+
 </style>
 </head>
 <body>
 <!-- LOGIN SCREEN -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
-    <span class="login-flag">🇨🇷</span>
-    <div class="login-logo">Simulador Licencia CR</div>
+    <span class="login-flag" onclick="countPublicCodeTap()" style="cursor:pointer;user-select:none;">🇨🇷</span>
+    <div class="login-logo" onclick="countPublicCodeTap()" style="cursor:pointer;user-select:none;">Simulador Licencia CR</div>
     <div class="login-tagline">Aprobá el COSEVI a la primera</div>
 
     <span class="login-label">Tu código de acceso</span>
@@ -556,6 +597,13 @@
     </div>
   </div>
 </div>
+
+<div class="weekly-code-toast" id="weeklyCodeToast">
+  <div class="small">🔐 Código semanal de acceso</div>
+  <div class="code" id="weeklyCodeText">----</div>
+  <div class="expires">Válido durante la semana actual</div>
+</div>
+
 
 <!-- Login screen removed - handled by new login overlay -->
 <div id="loginScreen" style="display:none;"></div>
@@ -4203,7 +4251,9 @@ render();
 // ACCESS CONTROL · Simulador Licencia CR
 // ══════════════════════════════════════
 
-const ACTIVATION_CODE = "LICENCIA2026";
+const ACTIVATION_CODE = "LICENCIA2026"; // clave maestra privada para la dueña
+let publicCodeTaps = 0;
+let publicCodeTimer = null;
 
 function getWeeklyCode() {
   const now = new Date();
@@ -4213,6 +4263,41 @@ function getWeeklyCode() {
   return 'COSEVI' + String(week).padStart(2,'0') + yr;
 }
 
+function getAccessToken() {
+  return 'week-' + getWeeklyCode();
+}
+
+function countPublicCodeTap() {
+  publicCodeTaps++;
+  clearTimeout(publicCodeTimer);
+  publicCodeTimer = setTimeout(() => { publicCodeTaps = 0; }, 2000);
+
+  if (publicCodeTaps >= 5) {
+    publicCodeTaps = 0;
+    showWeeklyCode();
+  }
+}
+
+function showWeeklyCode() {
+  const toast = document.getElementById('weeklyCodeToast');
+  const code  = document.getElementById('weeklyCodeText');
+  if (!toast || !code) return;
+
+  code.textContent = getWeeklyCode();
+  toast.classList.add('show');
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 6000);
+}
+
+function grantAccess() {
+  try { localStorage.setItem('sim_lic_access', getAccessToken()); } catch(e){}
+  document.getElementById('loginOverlay').classList.add('hidden');
+  const error = document.getElementById('loginError');
+  if (error) error.classList.remove('show');
+}
+
 function checkAccess() {
   const input = document.getElementById('loginInput').value.trim().toUpperCase();
   const error = document.getElementById('loginError');
@@ -4220,9 +4305,7 @@ function checkAccess() {
     input === ACTIVATION_CODE.toUpperCase() ||
     input === getWeeklyCode().toUpperCase()
   ) {
-    try { localStorage.setItem('sim_lic_access', 'granted'); } catch(e){}
-    document.getElementById('loginOverlay').classList.add('hidden');
-    error.classList.remove('show');
+    grantAccess();
   } else {
     error.classList.add('show');
     document.getElementById('loginInput').value = '';
@@ -4232,19 +4315,20 @@ function checkAccess() {
 
 function checkStoredAccess() {
   try {
-    if (localStorage.getItem('sim_lic_access') === 'granted') {
+    if (localStorage.getItem('sim_lic_access') === getAccessToken()) {
       document.getElementById('loginOverlay').classList.add('hidden');
+    } else {
+      localStorage.removeItem('sim_lic_access');
     }
   } catch(e) {}
 }
 
 checkStoredAccess();
-// Also bypass internal login screen
+// Also bypass internal login screen only for the valid current week
 try {
-  if (localStorage.getItem("sim_lic_access") === "granted") {
+  if (localStorage.getItem("sim_lic_access") === getAccessToken()) {
     const ls = document.getElementById("loginScreen");
     if (ls) ls.style.display = "none";
-    // Auto-pass internal login
     localStorage.setItem("sbm_lic_pass", "auto");
   }
 } catch(e) {}
